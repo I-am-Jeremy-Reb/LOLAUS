@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Optics & Image Analysis Toolkit</title>
 
-<!-- MathJax for LaTeX -->
+<!-- MathJax -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 <style>
@@ -29,7 +29,6 @@ nav button {
     color: white;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
 }
 
 nav button:hover {
@@ -77,20 +76,23 @@ button.calc:hover {
 .result {
     margin-top: 15px;
     font-weight: bold;
-    color: #111827;
 }
 
-img {
+img.preview {
     max-width: 300px;
     margin-top: 15px;
     border-radius: 8px;
 }
 
-footer {
-    text-align: center;
-    padding: 20px;
-    font-size: 12px;
-    color: #555;
+.logo-container {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 20px;
+}
+
+.logo-container img {
+    height: 80px;
 }
 </style>
 </head>
@@ -108,22 +110,44 @@ footer {
 
 <!-- HOME -->
 <div id="home" class="tab active">
+
     <div class="card">
         <h1>Optics & Image Analysis Toolkit</h1>
         <p>
-        This toolkit provides quick calculations relevant to imaging and Gaussian beam optics.
-        All computations are performed client-side.
+        A lightweight, browser-based toolkit for image analysis and Gaussian beam optics.
+        All calculations are performed locally in your browser.
         </p>
+
+        <div class="logo-container">
+            <!-- Replace with your actual image paths -->
+            <img src="zeus_logo.png" alt="ZEUS Laser Logo">
+            <img src="nsf_logo.png" alt="NSF Logo">
+        </div>
     </div>
 
     <div class="card">
-        <h3>Included Tools</h3>
+        <h3>Available Tools</h3>
         <ul>
-            <li>Average image brightness</li>
-            <li>Rayleigh range of a Gaussian beam</li>
+            <li>Average pixel brightness</li>
+            <li>Rayleigh range from f-number</li>
             <li>Gaussian beam propagation</li>
         </ul>
     </div>
+
+    <div class="card">
+        <h3>Development</h3>
+        <p>
+        This project is open for contributions. Researchers and developers are encouraged to expand its capabilities.
+        </p>
+
+        <p>
+        Current developer:<br>
+        <a href="https://sites.google.com/view/jeremy-rebenstock/about" target="_blank">
+        Jeremy Rebenstock
+        </a>
+        </p>
+    </div>
+
 </div>
 
 <!-- BRIGHTNESS -->
@@ -132,52 +156,60 @@ footer {
         <h2>Average Pixel Brightness</h2>
 
         <p>
-        The brightness is computed using the perceptual luminance formula:
+        Brightness is computed using:
         </p>
 
         \[
         I = 0.299R + 0.587G + 0.114B
         \]
 
-        <p>
-        The reported value is the spatial average:
-        </p>
-
         \[
         \langle I \rangle = \frac{1}{N} \sum I(x,y)
         \]
 
         <input type="file" id="upload" accept="image/*"><br>
-        <img id="preview">
+        <img id="preview" class="preview">
         <canvas id="canvas" style="display:none;"></canvas>
 
         <div id="result" class="result"></div>
+
+        <p style="margin-top:20px; font-size: 0.9em;">
+        Reference: ITU-R BT.601 standard for luminance conversion
+        </p>
     </div>
 </div>
 
 <!-- RAYLEIGH -->
 <div id="rayleigh" class="tab">
     <div class="card">
-        <h2>Rayleigh Range</h2>
+        <h2>Rayleigh Range (from f-number)</h2>
 
         <p>
-        The Rayleigh range defines the distance over which a Gaussian beam remains near focus:
+        For a focused Gaussian beam, the waist can be approximated from the f-number:
+        </p>
+
+        \[
+        w_0 \approx \frac{\lambda f/\#}{\pi}
+        \]
+
+        <p>
+        The Rayleigh range is:
         </p>
 
         \[
         z_R = \frac{\pi w_0^2}{\lambda}
         \]
 
-        <p>
-        Inputs (SI units):
-        </p>
-
-        <input id="w0" placeholder="Beam waist w₀ (m)">
+        <input id="fnum" placeholder="f-number (f/#)">
         <input id="lambda" placeholder="Wavelength λ (m)"><br>
 
         <button class="calc" onclick="calcRayleigh()">Calculate</button>
 
         <div id="rayleighResult" class="result"></div>
+
+        <p style="margin-top:20px; font-size: 0.9em;">
+        Reference: A. E. Siegman, <i>Lasers</i> (1986)
+        </p>
     </div>
 </div>
 
@@ -186,21 +218,9 @@ footer {
     <div class="card">
         <h2>Gaussian Beam Propagation</h2>
 
-        <p>
-        The beam radius evolves according to:
-        </p>
-
         \[
         w(z) = w_0 \sqrt{1 + \left(\frac{z}{z_R}\right)^2}
         \]
-
-        <p>
-        where:
-        </p>
-        <ul>
-            <li>\( w_0 \): waist size</li>
-            <li>\( z_R \): Rayleigh range</li>
-        </ul>
 
         <input id="w0_g" placeholder="Beam waist w₀ (m)">
         <input id="lambda_g" placeholder="Wavelength λ (m)">
@@ -209,14 +229,14 @@ footer {
         <button class="calc" onclick="calcGaussian()">Calculate</button>
 
         <div id="gaussianResult" class="result"></div>
+
+        <p style="margin-top:20px; font-size: 0.9em;">
+        Reference: Saleh & Teich, <i>Fundamentals of Photonics</i>
+        </p>
     </div>
 </div>
 
 </div>
-
-<footer>
-References: A. E. Siegman, *Lasers* (1986); B. E. A. Saleh & M. C. Teich, *Fundamentals of Photonics* (1991)
-</footer>
 
 <script>
 // TAB SWITCH
@@ -250,11 +270,7 @@ document.getElementById('upload').addEventListener('change', function(e) {
         let count = data.length / 4;
 
         for (let i = 0; i < data.length; i += 4) {
-            let r = data[i];
-            let g = data[i+1];
-            let b = data[i+2];
-
-            total += 0.299*r + 0.587*g + 0.114*b;
+            total += 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
         }
 
         let avg = total / count;
@@ -264,15 +280,16 @@ document.getElementById('upload').addEventListener('change', function(e) {
     };
 });
 
-// RAYLEIGH
+// RAYLEIGH FROM F#
 function calcRayleigh() {
-    let w0 = parseFloat(document.getElementById('w0').value);
+    let fnum = parseFloat(document.getElementById('fnum').value);
     let lambda = parseFloat(document.getElementById('lambda').value);
 
+    let w0 = lambda * fnum / Math.PI;
     let zR = Math.PI * w0 * w0 / lambda;
 
     document.getElementById('rayleighResult').innerText =
-        "zR = " + zR.toExponential(3) + " m";
+        "w₀ ≈ " + w0.toExponential(3) + " m,  zR = " + zR.toExponential(3) + " m";
 }
 
 // GAUSSIAN
