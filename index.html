@@ -1,40 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Image Brightness Calculator</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 40px;
-        }
-        canvas {
-            display: none;
-        }
-        img {
-            max-width: 300px;
-            margin-top: 20px;
-        }
-        #result {
-            margin-top: 20px;
-            font-size: 1.5em;
-            font-weight: bold;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Optics & Image Tools</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        text-align: center;
+    }
+
+    nav {
+        background: #222;
+        padding: 10px;
+    }
+
+    nav button {
+        margin: 5px;
+        padding: 10px 15px;
+        border: none;
+        background: #444;
+        color: white;
+        cursor: pointer;
+    }
+
+    nav button:hover {
+        background: #666;
+    }
+
+    .tab {
+        display: none;
+        padding: 30px;
+    }
+
+    .active {
+        display: block;
+    }
+
+    canvas {
+        display: none;
+    }
+
+    input {
+        margin: 5px;
+        padding: 5px;
+    }
+
+    #result, #rayleighResult, #gaussianResult {
+        margin-top: 20px;
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+</style>
 </head>
+
 <body>
 
-<h1>Average Pixel Brightness</h1>
+<!-- NAVBAR -->
+<nav>
+    <button onclick="showTab('home')">Home</button>
+    <button onclick="showTab('brightness')">Brightness</button>
+    <button onclick="showTab('rayleigh')">Rayleigh Range</button>
+    <button onclick="showTab('gaussian')">Gaussian Propagation</button>
+</nav>
 
-<input type="file" id="upload" accept="image/*">
-<br>
-<img id="preview">
-<canvas id="canvas"></canvas>
+<!-- HOME -->
+<div id="home" class="tab active">
+    <h1>Optics & Image Analysis Tools</h1>
+    <p>Welcome! Use the tabs above to access different calculations:</p>
+    <ul>
+        <li>Average pixel brightness of an image</li>
+        <li>Rayleigh range of a Gaussian beam</li>
+        <li>Gaussian beam size after propagation</li>
+    </ul>
+</div>
 
-<div id="result"></div>
+<!-- PAGE 1: BRIGHTNESS -->
+<div id="brightness" class="tab">
+    <h2>Average Pixel Brightness</h2>
+
+    <input type="file" id="upload" accept="image/*"><br>
+    <img id="preview" style="max-width:300px;"><br>
+    <canvas id="canvas"></canvas>
+
+    <div id="result"></div>
+</div>
+
+<!-- PAGE 2: RAYLEIGH RANGE -->
+<div id="rayleigh" class="tab">
+    <h2>Rayleigh Range Calculator</h2>
+
+    <p>Inputs (SI units):</p>
+
+    <input id="w0" placeholder="Beam waist w0 (m)">
+    <input id="lambda" placeholder="Wavelength λ (m)"><br>
+
+    <button onclick="calcRayleigh()">Calculate</button>
+
+    <div id="rayleighResult"></div>
+</div>
+
+<!-- PAGE 3: GAUSSIAN PROPAGATION -->
+<div id="gaussian" class="tab">
+    <h2>Gaussian Beam Propagation</h2>
+
+    <p>Inputs (SI units):</p>
+
+    <input id="w0_g" placeholder="Beam waist w0 (m)">
+    <input id="lambda_g" placeholder="Wavelength λ (m)">
+    <input id="z_g" placeholder="Distance from focus z (m)"><br>
+
+    <button onclick="calcGaussian()">Calculate</button>
+
+    <div id="gaussianResult"></div>
+</div>
 
 <script>
+// ---------------- TAB SWITCHING ----------------
+function showTab(tabId) {
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.getElementById(tabId).classList.add('active');
+}
+
+// ---------------- IMAGE BRIGHTNESS ----------------
 document.getElementById('upload').addEventListener('change', function(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -57,29 +148,61 @@ document.getElementById('upload').addEventListener('change', function(event) {
 
         ctx.drawImage(img, 0, 0);
 
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-        let totalBrightness = 0;
-        let pixelCount = data.length / 4;
+        let total = 0;
+        let count = data.length / 4;
 
         for (let i = 0; i < data.length; i += 4) {
             let r = data[i];
             let g = data[i + 1];
             let b = data[i + 2];
 
-            // Standard luminance formula
-            let brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-
-            totalBrightness += brightness;
+            let brightness = 0.299*r + 0.587*g + 0.114*b;
+            total += brightness;
         }
 
-        let avgBrightness = totalBrightness / pixelCount;
+        let avg = total / count;
 
         document.getElementById('result').innerText =
-            "Average Brightness: " + avgBrightness.toFixed(2);
+            "Average Brightness: " + avg.toFixed(2);
     };
 });
+
+// ---------------- RAYLEIGH RANGE ----------------
+function calcRayleigh() {
+    let w0 = parseFloat(document.getElementById('w0').value);
+    let lambda = parseFloat(document.getElementById('lambda').value);
+
+    if (!w0 || !lambda) {
+        alert("Enter valid inputs");
+        return;
+    }
+
+    let zR = Math.PI * w0 * w0 / lambda;
+
+    document.getElementById('rayleighResult').innerText =
+        "Rayleigh Range zR = " + zR.toExponential(3) + " m";
+}
+
+// ---------------- GAUSSIAN PROPAGATION ----------------
+function calcGaussian() {
+    let w0 = parseFloat(document.getElementById('w0_g').value);
+    let lambda = parseFloat(document.getElementById('lambda_g').value);
+    let z = parseFloat(document.getElementById('z_g').value);
+
+    if (!w0 || !lambda || !z) {
+        alert("Enter valid inputs");
+        return;
+    }
+
+    let zR = Math.PI * w0 * w0 / lambda;
+
+    let w = w0 * Math.sqrt(1 + (z/zR)*(z/zR));
+
+    document.getElementById('gaussianResult').innerText =
+        "Beam radius w(z) = " + w.toExponential(3) + " m";
+}
 </script>
 
 </body>
