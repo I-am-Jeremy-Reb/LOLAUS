@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>Optics & Image Analysis Toolkit</title>
 
-<!-- MathJax -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 <style>
@@ -12,7 +11,6 @@ body {
     font-family: "Segoe UI", Tahoma, sans-serif;
     margin: 0;
     background: #f4f6f8;
-    color: #222;
 }
 
 nav {
@@ -31,9 +29,7 @@ nav button {
     cursor: pointer;
 }
 
-nav button:hover {
-    background: #4b5563;
-}
+nav button:hover { background: #4b5563; }
 
 .container {
     max-width: 900px;
@@ -69,10 +65,6 @@ button.calc {
     cursor: pointer;
 }
 
-button.calc:hover {
-    background: #1d4ed8;
-}
-
 .result {
     margin-top: 15px;
     font-weight: bold;
@@ -101,7 +93,7 @@ img.preview {
 
 <nav>
     <button onclick="showTab('home')">Home</button>
-    <button onclick="showTab('brightness')">Brightness</button>
+    <button onclick="showTab('strehl')">Strehl / Encircled Energy</button>
     <button onclick="showTab('rayleigh')">Rayleigh Range</button>
     <button onclick="showTab('gaussian')">Gaussian Beam</button>
 </nav>
@@ -110,71 +102,53 @@ img.preview {
 
 <!-- HOME -->
 <div id="home" class="tab active">
-
     <div class="card">
         <h1>Optics & Image Analysis Toolkit</h1>
-        <p>
-        A lightweight, browser-based toolkit for image analysis and Gaussian beam optics.
-        All calculations are performed locally in your browser.
-        </p>
 
         <div class="logo-container">
-            <!-- Replace with your actual image paths -->
-            <img src="zeus_logo.png" alt="ZEUS Laser Logo">
-            <img src="nsf_logo.png" alt="NSF Logo">
+            <img src="zeus_logo.png">
+            <img src="nsf_logo.png">
         </div>
-    </div>
 
-    <div class="card">
-        <h3>Available Tools</h3>
-        <ul>
-            <li>Average pixel brightness</li>
-            <li>Rayleigh range from f-number</li>
-            <li>Gaussian beam propagation</li>
-        </ul>
-    </div>
-
-    <div class="card">
-        <h3>Development</h3>
         <p>
-        This project is open for contributions. Researchers and developers are encouraged to expand its capabilities.
+        This toolkit provides browser-based diagnostics for laser beam analysis.
+        Contributions are welcome.
         </p>
 
         <p>
-        Current developer:<br>
+        Developer: 
         <a href="https://sites.google.com/view/jeremy-rebenstock/about" target="_blank">
         Jeremy Rebenstock
         </a>
         </p>
     </div>
-
 </div>
 
-<!-- BRIGHTNESS -->
-<div id="brightness" class="tab">
+<!-- STREHL -->
+<div id="strehl" class="tab">
     <div class="card">
-        <h2>Average Pixel Brightness</h2>
-
-        <p>
-        Brightness is computed using:
-        </p>
+        <h2>Encircled Energy & Strehl Estimate</h2>
 
         \[
-        I = 0.299R + 0.587G + 0.114B
+        E(r) = \int_0^r I(r') 2\pi r' dr'
         \]
 
         \[
-        \langle I \rangle = \frac{1}{N} \sum I(x,y)
+        S \approx \left(\frac{r_{\mathrm{DL}}}{r_{\mathrm{meas}}}\right)^2
         \]
 
-        <input type="file" id="upload" accept="image/*"><br>
+        <input type="file" id="upload"><br>
+
+        <input id="um_per_pixel" placeholder="µm per pixel">
+        <input id="r_dl" placeholder="Diffraction-limited radius (µm)"><br>
+
         <img id="preview" class="preview">
         <canvas id="canvas" style="display:none;"></canvas>
 
         <div id="result" class="result"></div>
 
-        <p style="margin-top:20px; font-size: 0.9em;">
-        Reference: ITU-R BT.601 standard for luminance conversion
+        <p style="font-size:0.9em;">
+        Reference: Siegman, <i>Lasers</i> (1986)
         </p>
     </div>
 </div>
@@ -182,34 +156,19 @@ img.preview {
 <!-- RAYLEIGH -->
 <div id="rayleigh" class="tab">
     <div class="card">
-        <h2>Rayleigh Range (from f-number)</h2>
-
-        <p>
-        For a focused Gaussian beam, the waist can be approximated from the f-number:
-        </p>
+        <h2>Rayleigh Range</h2>
 
         \[
         w_0 \approx \frac{\lambda f/\#}{\pi}
-        \]
-
-        <p>
-        The Rayleigh range is:
-        </p>
-
-        \[
+        \quad
         z_R = \frac{\pi w_0^2}{\lambda}
         \]
 
-        <input id="fnum" placeholder="f-number (f/#)">
-        <input id="lambda" placeholder="Wavelength λ (m)"><br>
+        <input id="fnum" placeholder="f-number">
+        <input id="lambda" placeholder="Wavelength (m)"><br>
 
         <button class="calc" onclick="calcRayleigh()">Calculate</button>
-
         <div id="rayleighResult" class="result"></div>
-
-        <p style="margin-top:20px; font-size: 0.9em;">
-        Reference: A. E. Siegman, <i>Lasers</i> (1986)
-        </p>
     </div>
 </div>
 
@@ -222,17 +181,12 @@ img.preview {
         w(z) = w_0 \sqrt{1 + \left(\frac{z}{z_R}\right)^2}
         \]
 
-        <input id="w0_g" placeholder="Beam waist w₀ (m)">
-        <input id="lambda_g" placeholder="Wavelength λ (m)">
-        <input id="z_g" placeholder="Distance z (m)"><br>
+        <input id="w0_g" placeholder="w0 (m)">
+        <input id="lambda_g" placeholder="λ (m)">
+        <input id="z_g" placeholder="z (m)"><br>
 
         <button class="calc" onclick="calcGaussian()">Calculate</button>
-
         <div id="gaussianResult" class="result"></div>
-
-        <p style="margin-top:20px; font-size: 0.9em;">
-        Reference: Saleh & Teich, <i>Fundamentals of Photonics</i>
-        </p>
     </div>
 </div>
 
@@ -245,9 +199,7 @@ function showTab(tabId) {
     document.getElementById(tabId).classList.add('active');
 }
 
-// BRIGHTNESS
-<script>
-// ---------- IMAGE → ENCIRCLED ENERGY ----------
+// IMAGE PROCESSING + STREHL
 document.getElementById('upload').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -271,77 +223,66 @@ document.getElementById('upload').addEventListener('change', function(e) {
         const width = canvas.width;
         const height = canvas.height;
 
-        // --- Convert to grayscale intensity array ---
         let intensity = new Array(width * height);
-
-        let totalIntensity = 0;
+        let total = 0;
 
         for (let i = 0; i < data.length; i += 4) {
-            let idx = i / 4;
-
+            let idx = i/4;
             let I = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
-
             intensity[idx] = I;
-            totalIntensity += I;
+            total += I;
         }
 
-        // --- Find centroid (beam center) ---
-        let xSum = 0, ySum = 0;
-
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                let idx = y*width + x;
-                let I = intensity[idx];
-
-                xSum += x * I;
-                ySum += y * I;
+        // centroid
+        let xSum=0, ySum=0;
+        for (let y=0; y<height; y++) {
+            for (let x=0; x<width; x++) {
+                let I = intensity[y*width + x];
+                xSum += x*I;
+                ySum += y*I;
             }
         }
 
-        let x0 = xSum / totalIntensity;
-        let y0 = ySum / totalIntensity;
+        let x0 = xSum/total;
+        let y0 = ySum/total;
 
-        // --- Compute radius + intensity list ---
-        let radialData = [];
+        let radial = [];
 
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-
-                let idx = y*width + x;
-                let I = intensity[idx];
-
-                let r = Math.sqrt((x - x0)**2 + (y - y0)**2);
-
-                radialData.push({r: r, I: I});
+        for (let y=0; y<height; y++) {
+            for (let x=0; x<width; x++) {
+                let I = intensity[y*width + x];
+                let r = Math.sqrt((x-x0)**2 + (y-y0)**2);
+                radial.push({r,I});
             }
         }
 
-        // --- Sort by radius ---
-        radialData.sort((a,b) => a.r - b.r);
+        radial.sort((a,b)=>a.r-b.r);
 
-        // --- Compute cumulative energy ---
-        let cumulative = 0;
-        let targetFraction = 0.8; // 80% encircled energy
-        let targetEnergy = totalIntensity * targetFraction;
+        let cumulative=0;
+        let target = 0.8*total;
+        let r_pix=0;
 
-        let radius = 0;
-
-        for (let i = 0; i < radialData.length; i++) {
-            cumulative += radialData[i].I;
-
-            if (cumulative >= targetEnergy) {
-                radius = radialData[i].r;
+        for (let i=0; i<radial.length; i++) {
+            cumulative += radial[i].I;
+            if (cumulative >= target) {
+                r_pix = radial[i].r;
                 break;
             }
         }
 
+        let um_per_pixel = parseFloat(document.getElementById('um_per_pixel').value);
+        let r_dl = parseFloat(document.getElementById('r_dl').value);
+
+        let r_um = r_pix * um_per_pixel;
+
+        let strehl = (r_dl / r_um)**2;
+
         document.getElementById('result').innerText =
-            `Encircled Energy Radius (80%): ${radius.toFixed(2)} pixels`;
+            `r₈₀ = ${r_pix.toFixed(2)} px (${r_um.toFixed(2)} µm)\nStrehl ≈ ${strehl.toFixed(3)}`;
     };
 });
-</script>
 
-// RAYLEIGH FROM F#
+// RAYLEIGH
 function calcRayleigh() {
     let fnum = parseFloat(document.getElementById('fnum').value);
     let lambda = parseFloat(document.getElementById('lambda').value);
@@ -350,7 +291,7 @@ function calcRayleigh() {
     let zR = Math.PI * w0 * w0 / lambda;
 
     document.getElementById('rayleighResult').innerText =
-        "w₀ ≈ " + w0.toExponential(3) + " m,  zR = " + zR.toExponential(3) + " m";
+        `zR = ${zR.toExponential(3)} m`;
 }
 
 // GAUSSIAN
@@ -363,7 +304,7 @@ function calcGaussian() {
     let w = w0 * Math.sqrt(1 + (z/zR)**2);
 
     document.getElementById('gaussianResult').innerText =
-        "w(z) = " + w.toExponential(3) + " m";
+        `w(z) = ${w.toExponential(3)} m`;
 }
 </script>
 
