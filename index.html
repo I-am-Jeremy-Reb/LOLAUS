@@ -246,6 +246,8 @@ function showTab(tabId) {
 }
 
 // BRIGHTNESS
+<script>
+// ---------- IMAGE → ENCIRCLED ENERGY ----------
 document.getElementById('upload').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -266,19 +268,78 @@ document.getElementById('upload').addEventListener('change', function(e) {
 
         const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-        let total = 0;
-        let count = data.length / 4;
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // --- Convert to grayscale intensity array ---
+        let intensity = new Array(width * height);
+
+        let totalIntensity = 0;
 
         for (let i = 0; i < data.length; i += 4) {
-            total += 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+            let idx = i / 4;
+
+            let I = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+
+            intensity[idx] = I;
+            totalIntensity += I;
         }
 
-        let avg = total / count;
+        // --- Find centroid (beam center) ---
+        let xSum = 0, ySum = 0;
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                let idx = y*width + x;
+                let I = intensity[idx];
+
+                xSum += x * I;
+                ySum += y * I;
+            }
+        }
+
+        let x0 = xSum / totalIntensity;
+        let y0 = ySum / totalIntensity;
+
+        // --- Compute radius + intensity list ---
+        let radialData = [];
+
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+
+                let idx = y*width + x;
+                let I = intensity[idx];
+
+                let r = Math.sqrt((x - x0)**2 + (y - y0)**2);
+
+                radialData.push({r: r, I: I});
+            }
+        }
+
+        // --- Sort by radius ---
+        radialData.sort((a,b) => a.r - b.r);
+
+        // --- Compute cumulative energy ---
+        let cumulative = 0;
+        let targetFraction = 0.8; // 80% encircled energy
+        let targetEnergy = totalIntensity * targetFraction;
+
+        let radius = 0;
+
+        for (let i = 0; i < radialData.length; i++) {
+            cumulative += radialData[i].I;
+
+            if (cumulative >= targetEnergy) {
+                radius = radialData[i].r;
+                break;
+            }
+        }
 
         document.getElementById('result').innerText =
-            "Average Brightness: " + avg.toFixed(2);
+            `Encircled Energy Radius (80%): ${radius.toFixed(2)} pixels`;
     };
 });
+</script>
 
 // RAYLEIGH FROM F#
 function calcRayleigh() {
