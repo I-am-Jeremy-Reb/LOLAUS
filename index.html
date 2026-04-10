@@ -5,91 +5,112 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LOLAUS — Laser Optics Toolkit</title>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
-<script src="https://cdn.jsdelivr.net/npm/utif2@1.0.0/UTIF.js"></script>
 <script>
-// Inline minimal TIFF decoder as fallback if UTIF CDN fails.
-// Handles the most common cases: 8-bit and 16-bit grayscale / RGB TIFFs.
-window._tiffFallback = function(arrayBuffer) {
-  const buf = new DataView(arrayBuffer);
-  const magic = buf.getUint16(0, false);
-  const le = (magic === 0x4949); // little-endian if 'II'
-  const r16 = (o) => buf.getUint16(o, le);
-  const r32 = (o) => buf.getUint32(o, le);
+// Self-contained TIFF decoder — zero external dependencies.
+// Handles: uncompressed 8-bit and 16-bit grayscale, RGB, and RGBA TIFFs,
+// both little-endian (II) and big-endian (MM), single or multi-strip.
+// This covers virtually all scientific camera output formats.
+function decodeTIFF(arrayBuffer) {
+  const dv   = new DataView(arrayBuffer);
+  const bytes = new Uint8Array(arrayBuffer);
+  const hdr  = dv.getUint16(0, false);
+  if (hdr !== 0x4949 && hdr !== 0x4D4D) throw new Error('Not a TIFF file (bad header)');
+  const le   = (hdr === 0x4949);
+  const r16  = o => dv.getUint16(o, le);
+  const r32  = o => dv.getUint32(o, le);
+  if (r16(2) !== 42) throw new Error('Not a valid TIFF (magic number mismatch)');
 
-  if (r16(0) !== 0x4949 && r16(0) !== 0x4D4D) throw new Error('Not a TIFF file');
-  if (r16(2) !== 42) throw new Error('Not a valid TIFF (magic 42 missing)');
-
-  let ifdOffset = r32(4);
+  // --- Read IFD tags ---
   const tags = {};
-  const nEntries = r16(ifdOffset);
-  ifdOffset += 2;
-  for (let i = 0; i < nEntries; i++) {
-    const base = ifdOffset + i * 12;
-    const tag  = r16(base);
-    const type = r16(base + 2);
-    const count = r32(base + 4);
-    let val;
-    if (type === 3 && count === 1)      val = r16(base + 8);
-    else if (type === 4 && count === 1) val = r32(base + 8);
-    else if (type === 3 && count <= 2)  { val = [r16(base+8), r16(base+10)]; }
-    else                                val = r32(base + 8); // offset for arrays
-    tags[tag] = { type, count, val };
+  let ifdOff = r32(4);
+  const n = r16(ifdOff); ifdOff += 2;
+  for (let i = 0; i < n; i++) {
+    const b     = ifdOff + i * 12;
+    const tag   = r16(b);
+    const type  = r16(b + 2);
+    const count = r32(b + 4);
+    // Read value/offset field
+    const readVal = (type, offset) => {
+      if (type === 3)  return r16(offset);   // SHORT
+      if (type === 4)  return r32(offset);   // LONG
+      if (type === 1)  return bytes[offset]; // BYTE
+      return r32(offset);
+    };
+    // For multi-value SHORT arrays, read all values from their offset
+    if (type === 3 && count > 1) {
+      const dataOff = count * 2 <= 4 ? b + 8 : r32(b + 8);
+      const arr = [];
+      for (let j = 0; j < count; j++) arr.push(r16(dataOff + j * 2));
+      tags[tag] = arr;
+    } else if (type === 4 && count > 1) {
+      const dataOff = r32(b + 8);
+      const arr = [];
+      for (let j = 0; j < count; j++) arr.push(r32(dataOff + j * 4));
+      tags[tag] = arr;
+    } else {
+      tags[tag] = readVal(type, b + 8);
+    }
   }
 
-  const width      = tags[256]?.val;
-  const height     = tags[257]?.val;
-  const bps        = tags[258]?.val; // BitsPerSample
-  const compression= tags[259]?.val || 1;
-  const photometric= tags[262]?.val || 1;
-  const stripOffsets= tags[273]?.val;
-  const samplesPerPixel = tags[277]?.val || 1;
-  const stripByteCounts = tags[279]?.val;
+  const width       = tags[256];
+  const height      = tags[257];
+  const bpsRaw      = tags[258];  // BitsPerSample (may be array)
+  const compression = tags[259] || 1;
+  const spp         = tags[277] || 1; // SamplesPerPixel
+  const stripOffs   = tags[273];      // StripOffsets
+  const stripCounts = tags[279];      // StripByteCounts
 
-  if (compression !== 1) throw new Error(`Compressed TIFF (type ${compression}) not supported by fallback. Try saving as uncompressed TIFF.`);
+  if (!width || !height) throw new Error('TIFF missing width/height tags');
+  if (compression !== 1) throw new Error(
+    `Compression type ${compression} is not supported. Please re-save as uncompressed TIFF.`
+  );
 
-  const bitsPerSample = Array.isArray(bps) ? bps[0] : (bps || 8);
-  const bytesPerSample = bitsPerSample === 16 ? 2 : 1;
-  const maxVal = bitsPerSample === 16 ? 65535 : 255;
+  const bps = Array.isArray(bpsRaw) ? bpsRaw[0] : (bpsRaw || 8);
+  if (bps !== 8 && bps !== 16) throw new Error(`${bps}-bit TIFF not supported (only 8 and 16-bit)`);
 
-  const rgba = new Uint8ClampedArray(width * height * 4);
-  const bytes = new Uint8Array(arrayBuffer);
+  const bytesPS = bps === 16 ? 2 : 1;
+  const maxVal  = bps === 16 ? 65535 : 255;
+  const rgba    = new Uint8ClampedArray(width * height * 4);
 
-  // Handle single or multiple strips
-  const offsets = Array.isArray(stripOffsets) ? stripOffsets : [stripOffsets];
+  // Normalise strip arrays
+  const offsets = Array.isArray(stripOffs) ? stripOffs : [stripOffs];
+  const counts  = stripCounts
+    ? (Array.isArray(stripCounts) ? stripCounts : [stripCounts])
+    : [width * height * spp * bytesPS];
+
+  const readSample = (ptr) => {
+    if (bps === 16) {
+      const raw = le
+        ? (bytes[ptr] | (bytes[ptr + 1] << 8))
+        : ((bytes[ptr] << 8) | bytes[ptr + 1]);
+      return Math.round((raw / maxVal) * 255);
+    }
+    return bytes[ptr];
+  };
+
   let pixelIdx = 0;
-
   for (let s = 0; s < offsets.length; s++) {
     let ptr = offsets[s];
-    const stripPixels = (stripByteCounts
-      ? (Array.isArray(stripByteCounts) ? stripByteCounts[s] : stripByteCounts) / (bytesPerSample * samplesPerPixel)
-      : (width * height));
-
+    const stripPixels = Math.floor(counts[s] / (bytesPS * spp));
     for (let p = 0; p < stripPixels && pixelIdx < width * height; p++, pixelIdx++) {
       let r, g, b;
-      if (samplesPerPixel === 1) {
-        let v = bytesPerSample === 2
-          ? (le ? (bytes[ptr] | (bytes[ptr+1]<<8)) : ((bytes[ptr]<<8) | bytes[ptr+1]))
-          : bytes[ptr];
-        ptr += bytesPerSample;
-        const norm = Math.round((v / maxVal) * 255);
-        r = g = b = norm;
-      } else {
-        const read = (i) => bytesPerSample === 2
-          ? (le ? (bytes[ptr + i*2] | (bytes[ptr+i*2+1]<<8)) : ((bytes[ptr+i*2]<<8)|bytes[ptr+i*2+1]))
-          : bytes[ptr + i];
-        r = Math.round((read(0) / maxVal) * 255);
-        g = Math.round((read(1) / maxVal) * 255);
-        b = Math.round((read(2) / maxVal) * 255);
-        ptr += bytesPerSample * samplesPerPixel;
+      if (spp === 1) {
+        const v = readSample(ptr); ptr += bytesPS;
+        r = g = b = v;
+      } else if (spp >= 3) {
+        r = readSample(ptr);          ptr += bytesPS;
+        g = readSample(ptr);          ptr += bytesPS;
+        b = readSample(ptr);          ptr += bytesPS;
+        if (spp === 4) ptr += bytesPS; // skip alpha; we set it to 255
       }
-      rgba[pixelIdx*4]   = r;
-      rgba[pixelIdx*4+1] = g;
-      rgba[pixelIdx*4+2] = b;
-      rgba[pixelIdx*4+3] = 255;
+      rgba[pixelIdx * 4]     = r;
+      rgba[pixelIdx * 4 + 1] = g;
+      rgba[pixelIdx * 4 + 2] = b;
+      rgba[pixelIdx * 4 + 3] = 255;
     }
   }
   return { rgba, width, height };
-};
+}
 </script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
@@ -567,22 +588,13 @@ document.getElementById('upload').addEventListener('change', function(e) {
   const reader = new FileReader();
   reader.onload = function(ev) {
     try {
-      const buf = ev.target.result;
-      if (typeof UTIF !== 'undefined') {
-        const ifds = UTIF.decode(buf);
-        UTIF.decodeImage(buf, ifds[0]);
-        rawData   = UTIF.toRGBA8(ifds[0]);
-        imgWidth  = ifds[0].width;
-        imgHeight = ifds[0].height;
-      } else {
-        const result = window._tiffFallback(buf);
-        rawData   = result.rgba;
-        imgWidth  = result.width;
-        imgHeight = result.height;
-      }
+      const result = decodeTIFF(ev.target.result);
+      rawData   = result.rgba;
+      imgWidth  = result.width;
+      imgHeight = result.height;
       statusEl.innerHTML = `${file.name} &nbsp;<span class="status-badge status-ok">${imgWidth} × ${imgHeight} px</span>`;
     } catch(err) {
-      statusEl.innerHTML = `<span style="color:var(--danger)">Error decoding TIFF: ${err.message}</span>`;
+      statusEl.innerHTML = `<span style="color:var(--danger)">Error: ${err.message}</span>`;
     }
   };
   reader.readAsArrayBuffer(file);
