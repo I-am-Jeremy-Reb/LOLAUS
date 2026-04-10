@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Optics & Image Analysis Toolkit</title>
+<title>Optics Toolkit</title>
 
 <!-- MathJax -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-<!-- TIFF SUPPORT -->
+<!-- TIFF DECODER -->
 <script src="https://unpkg.com/utif@3.1.0/UTIF.min.js"></script>
 
 <style>
@@ -43,30 +43,21 @@ nav button {
     background: white;
     padding: 25px;
     border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
     margin-bottom: 25px;
 }
 
 .tab { display: none; }
 .active { display: block; }
 
-input {
-    margin: 5px;
-    padding: 8px;
-}
-
-button.calc {
-    margin-top: 10px;
-    padding: 10px 15px;
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 6px;
-}
-
 canvas {
     margin-top: 15px;
     max-width: 100%;
+    border: 1px solid #ccc;
+}
+
+button {
+    margin-top: 10px;
+    padding: 10px;
 }
 </style>
 </head>
@@ -76,6 +67,8 @@ canvas {
 <nav>
     <button onclick="showTab('home')">Home</button>
     <button onclick="showTab('strehl')">Strehl Tool</button>
+    <button onclick="showTab('rayleigh')">Rayleigh</button>
+    <button onclick="showTab('gaussian')">Gaussian</button>
 </nav>
 
 <div class="container">
@@ -115,7 +108,9 @@ canvas {
         <input id="um_per_pixel" placeholder="µm per pixel (optional)">
         <input id="r_dl" placeholder="Diffraction limit (µm, optional)"><br>
 
-        <button class="calc" onclick="plotCircle()">Plot 80% Radius</button>
+        <button onclick="showImage()">Show Uploaded Image</button>
+        <button onclick="calculateEE()">Calculate Encircled Energy</button>
+        <button onclick="plotCircle()">Plot 80% Radius</button>
 
         <canvas id="canvas"></canvas>
 
@@ -123,11 +118,45 @@ canvas {
     </div>
 </div>
 
+<!-- RAYLEIGH -->
+<div id="rayleigh" class="tab">
+    <div class="card">
+        \[
+        w_0 \approx \frac{\lambda f/\#}{\pi}, \quad
+        z_R = \frac{\pi w_0^2}{\lambda}
+        \]
+
+        <input id="fnum" placeholder="f-number">
+        <input id="lambda" placeholder="λ (m)">
+        <button onclick="calcRayleigh()">Calculate</button>
+
+        <div id="rayleighResult"></div>
+    </div>
+</div>
+
+<!-- GAUSSIAN -->
+<div id="gaussian" class="tab">
+    <div class="card">
+        \[
+        w(z) = w_0 \sqrt{1 + \left(\frac{z}{z_R}\right)^2}
+        \]
+
+        <input id="w0_g" placeholder="w0 (m)">
+        <input id="lambda_g" placeholder="λ (m)">
+        <input id="z_g" placeholder="z (m)">
+        <button onclick="calcGaussian()">Calculate</button>
+
+        <div id="gaussianResult"></div>
+    </div>
+</div>
+
 </div>
 
 <script>
-let currentImageData = null;
-let r80_global = null;
+let rawData = null;
+let width = 0;
+let height = 0;
+let x0=0, y0=0, r80=0;
 
 // TAB SWITCH
 function showTab(tabId) {
@@ -135,7 +164,7 @@ function showTab(tabId) {
     document.getElementById(tabId).classList.add('active');
 }
 
-// HANDLE FILE UPLOAD
+// LOAD FILE
 document.getElementById('upload').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -144,41 +173,23 @@ document.getElementById('upload').addEventListener('change', function(e) {
 
     reader.onload = function(ev) {
 
-        // TIFF handling
         if (file.name.toLowerCase().includes(".tif")) {
 
             let ifds = UTIF.decode(ev.target.result);
             UTIF.decodeImage(ev.target.result, ifds[0]);
 
-            let rgba = UTIF.toRGBA8(ifds[0]);
-            let width = ifds[0].width;
-            let height = ifds[0].height;
-
-            processImage(rgba, width, height);
-        }
-        else {
-            // fallback for png/jpg
-            let img = new Image();
-            img.onload = function() {
-                let canvas = document.getElementById('canvas');
-                let ctx = canvas.getContext('2d');
-
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img,0,0);
-
-                let data = ctx.getImageData(0,0,canvas.width,canvas.height).data;
-                processImage(data, canvas.width, canvas.height);
-            };
-            img.src = ev.target.result;
+            rawData = UTIF.toRGBA8(ifds[0]);
+            width = ifds[0].width;
+            height = ifds[0].height;
         }
     };
 
     reader.readAsArrayBuffer(file);
 });
 
-// CORE PROCESSING
-function processImage(data, width, height) {
+// SHOW IMAGE
+function showImage() {
+    if (!rawData) return;
 
     let canvas = document.getElementById('canvas');
     let ctx = canvas.getContext('2d');
@@ -186,37 +197,44 @@ function processImage(data, width, height) {
     canvas.width = width;
     canvas.height = height;
 
-    let imageData = ctx.createImageData(width, height);
-    imageData.data.set(data);
-    ctx.putImageData(imageData,0,0);
+    let imgData = ctx.createImageData(width, height);
+    imgData.data.set(rawData);
+
+    ctx.putImageData(imgData, 0, 0);
+}
+
+// CALCULATE EE
+function calculateEE() {
+    if (!rawData) return;
 
     let intensity = new Array(width*height);
     let total = 0;
 
-    for (let i=0; i<data.length; i+=4) {
+    for (let i=0; i<rawData.length; i+=4) {
         let idx = i/4;
-        let I = data[i]; // grayscale assumption for TIFF
+        let I = rawData[i]; // grayscale assumption
         intensity[idx] = I;
         total += I;
     }
 
     // centroid
     let xSum=0, ySum=0;
-    for (let y=0; y<height; y++) {
-        for (let x=0; x<width; x++) {
+
+    for (let y=0;y<height;y++){
+        for (let x=0;x<width;x++){
             let I = intensity[y*width+x];
             xSum += x*I;
             ySum += y*I;
         }
     }
 
-    let x0 = xSum/total;
-    let y0 = ySum/total;
+    x0 = xSum/total;
+    y0 = ySum/total;
 
-    let radial = [];
+    let radial=[];
 
-    for (let y=0; y<height; y++) {
-        for (let x=0; x<width; x++) {
+    for (let y=0;y<height;y++){
+        for (let x=0;x<width;x++){
             let I = intensity[y*width+x];
             let r = Math.sqrt((x-x0)**2+(y-y0)**2);
             radial.push({r,I});
@@ -228,51 +246,67 @@ function processImage(data, width, height) {
     let cumulative=0;
     let target=0.8*total;
 
-    let r80=0;
-
-    for (let i=0;i<radial.length;i++) {
+    for (let i=0;i<radial.length;i++){
         cumulative += radial[i].I;
-        if (cumulative>=target) {
+        if (cumulative>=target){
             r80 = radial[i].r;
             break;
         }
     }
 
-    r80_global = r80;
-    currentImageData = {data,width,height,x0,y0};
+    let result = `r₈₀ = ${r80.toFixed(2)} pixels`;
 
-    let resultText = `r₈₀ = ${r80.toFixed(2)} pixels`;
+    let um = parseFloat(document.getElementById('um_per_pixel').value);
+    let rdl = parseFloat(document.getElementById('r_dl').value);
 
-    let um_per_pixel = parseFloat(document.getElementById('um_per_pixel').value);
-    let r_dl = parseFloat(document.getElementById('r_dl').value);
+    if (!isNaN(um)) {
+        let r_um = r80*um;
+        result += ` (${r_um.toFixed(2)} µm)`;
 
-    if (!isNaN(um_per_pixel)) {
-        let r_um = r80 * um_per_pixel;
-        resultText += ` (${r_um.toFixed(2)} µm)`;
-
-        if (!isNaN(r_dl)) {
-            let strehl = (r_dl / r_um)**2;
-            resultText += ` | Strehl ≈ ${strehl.toFixed(3)}`;
+        if (!isNaN(rdl)) {
+            let strehl = (rdl/r_um)**2;
+            result += ` | Strehl ≈ ${strehl.toFixed(3)}`;
         }
     }
 
-    document.getElementById('result').innerText = resultText;
+    document.getElementById('result').innerText = result;
 }
 
-// PLOT CIRCLE
+// PLOT
 function plotCircle() {
-    if (!currentImageData || !r80_global) return;
-
-    let {width,height,x0,y0} = currentImageData;
-
     let canvas = document.getElementById('canvas');
     let ctx = canvas.getContext('2d');
 
     ctx.beginPath();
-    ctx.arc(x0, y0, r80_global, 0, 2*Math.PI);
-    ctx.strokeStyle = "red";
-    ctx.lineWidth = 2;
+    ctx.arc(x0,y0,r80,0,2*Math.PI);
+    ctx.strokeStyle="red";
+    ctx.lineWidth=2;
     ctx.stroke();
+}
+
+// RAYLEIGH
+function calcRayleigh() {
+    let fnum=parseFloat(document.getElementById('fnum').value);
+    let lambda=parseFloat(document.getElementById('lambda').value);
+
+    let w0=lambda*fnum/Math.PI;
+    let zR=Math.PI*w0*w0/lambda;
+
+    document.getElementById('rayleighResult').innerText =
+        `zR = ${zR.toExponential(3)} m`;
+}
+
+// GAUSSIAN
+function calcGaussian() {
+    let w0=parseFloat(document.getElementById('w0_g').value);
+    let lambda=parseFloat(document.getElementById('lambda_g').value);
+    let z=parseFloat(document.getElementById('z_g').value);
+
+    let zR=Math.PI*w0*w0/lambda;
+    let w=w0*Math.sqrt(1+(z/zR)**2);
+
+    document.getElementById('gaussianResult').innerText =
+        `w(z) = ${w.toExponential(3)} m`;
 }
 </script>
 
