@@ -675,14 +675,15 @@ function buildIntensity() {
   }
 
   // Second pass: replace burnt pixels with 5×5 neighbourhood median
+  // Changed to 3x3 ? 
   for (let y = 0; y < imgHeight; y++) {
     for (let x = 0; x < imgWidth; x++) {
       const idx = y * imgWidth + x;
       if (cleaned[idx] !== -1) continue;
       burntCount; // already counted
       const nb = [];
-      for (let dy = -2; dy <= 2; dy++) {
-        for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
           const ny = y + dy, nx = x + dx;
           if (ny >= 0 && ny < imgHeight && nx >= 0 && nx < imgWidth) {
             const nv = cleaned[ny * imgWidth + nx];
