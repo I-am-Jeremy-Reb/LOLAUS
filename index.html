@@ -445,6 +445,17 @@ function decodeTIFF(arrayBuffer) {
   .status-wait { background: rgba(255,200,0,0.12); color: #ffc800; }
 
   #fileStatus { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 6px; min-height: 18px; }
+  .plot-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-align: center;
+    padding: 4px 0 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 </style>
 </head>
 <body>
@@ -521,8 +532,19 @@ function decodeTIFF(arrayBuffer) {
 
       <div id="eeResult" class="result-box"></div>
 
-      <div id="canvasWrap" class="canvas-wrap">
-        <canvas id="spotCanvas"></canvas>
+      <div id="plotsRow" style="display:none; flex-wrap:wrap; gap:12px; margin-top:20px;">
+        <div style="flex:1; min-width:280px;">
+          <div class="plot-title" id="titleLinear"></div>
+          <div class="canvas-wrap visible" style="margin-top:6px;">
+            <canvas id="spotCanvas"></canvas>
+          </div>
+        </div>
+        <div style="flex:1; min-width:280px;">
+          <div class="plot-title" id="titleLog"></div>
+          <div class="canvas-wrap visible" style="margin-top:6px;">
+            <canvas id="spotCanvasLog"></canvas>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -578,10 +600,13 @@ function showTab(id, btn) {
 // ─── TIFF LOAD ────────────────────────────────────────────────────
 let rawData = null, imgWidth = 0, imgHeight = 0;
 let cx = 0, cy = 0, r80 = 0;
+let currentFileName = '';
+let intensityData = null; // store clean intensity array for log rendering
 
 document.getElementById('upload').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
+  currentFileName = file.name.replace(/\.[^.]+$/, ''); // strip extension
   const statusEl = document.getElementById('fileStatus');
   statusEl.innerHTML = 'Loading <span class="status-badge status-wait">reading…</span>';
 
@@ -592,6 +617,9 @@ document.getElementById('upload').addEventListener('change', function(e) {
       rawData   = result.rgba;
       imgWidth  = result.width;
       imgHeight = result.height;
+      intensityData = null; // reset on new file
+      r80 = 0; cx = 0; cy = 0;
+      document.getElementById('plotsRow').style.display = 'none';
       statusEl.innerHTML = `${file.name} &nbsp;<span class="status-badge status-ok">${imgWidth} × ${imgHeight} px</span>`;
     } catch(err) {
       statusEl.innerHTML = `<span style="color:var(--danger)">Error: ${err.message}</span>`;
@@ -600,34 +628,163 @@ document.getElementById('upload').addEventListener('change', function(e) {
   reader.readAsArrayBuffer(file);
 });
 
-// ─── SHOW IMAGE ───────────────────────────────────────────────────
-function showImage() {
-  if (!rawData) { alert('Please upload a TIFF file first.'); return; }
-  const canvas = document.getElementById('spotCanvas');
-  const ctx = canvas.getContext('2d');
+// ─── BUILD INTENSITY ARRAY (with burnt pixel rejection) ──────────
+// Returns a Float64Array of cleaned intensity values.
+// Burnt pixels (at or near the sensor max) are replaced by the
+// local neighbourhood median so they don't skew the centroid or EE.
+function buildIntensity() {
+  const N = imgWidth * imgHeight;
+  const raw = new Float64Array(N);
+
+  // Determine max possible value from the data range
+  let dataMax = 0;
+  for (let i = 0; i < N; i++) {
+    const v = rawData[i*4]; // R channel (== G == B for grayscale)
+    if (v > dataMax) dataMax = v;
+    raw[i] = v;
+  }
+
+  // Burnt threshold: pixels at 255 (8-bit) or within 1% of dataMax
+  const burnThresh = Math.max(254, dataMax * 0.99);
+  let burntCount = 0;
+
+  // Replace burnt pixels with the median of their 5×5 neighbourhood
+  const cleaned = raw.slice();
+  for (let y = 0; y < imgHeight; y++) {
+    for (let x = 0; x < imgWidth; x++) {
+      const idx = y * imgWidth + x;
+      if (raw[idx] >= burnThresh) {
+        burntCount++;
+        const neighbours = [];
+        for (let dy = -2; dy <= 2; dy++) {
+          for (let dx = -2; dx <= 2; dx++) {
+            const ny = y + dy, nx = x + dx;
+            if (ny >= 0 && ny < imgHeight && nx >= 0 && nx < imgWidth) {
+              const nv = raw[ny * imgWidth + nx];
+              if (nv < burnThresh) neighbours.push(nv);
+            }
+          }
+        }
+        if (neighbours.length > 0) {
+          neighbours.sort((a, b) => a - b);
+          cleaned[idx] = neighbours[Math.floor(neighbours.length / 2)];
+        } else {
+          cleaned[idx] = 0; // fully saturated region — zero out
+        }
+      }
+    }
+  }
+  return { intensity: cleaned, burntCount, dataMax };
+}
+
+// ─── RENDER LINEAR IMAGE ──────────────────────────────────────────
+function renderLinear(canvas, intensity) {
   canvas.width  = imgWidth;
   canvas.height = imgHeight;
+  const ctx = canvas.getContext('2d');
   const imgData = ctx.createImageData(imgWidth, imgHeight);
-  imgData.data.set(rawData);
+  const N = imgWidth * imgHeight;
+  let iMax = 0;
+  for (let i = 0; i < N; i++) if (intensity[i] > iMax) iMax = intensity[i];
+  const scale = iMax > 0 ? 255 / iMax : 1;
+  for (let i = 0; i < N; i++) {
+    const v = Math.round(intensity[i] * scale);
+    imgData.data[i*4]   = v;
+    imgData.data[i*4+1] = v;
+    imgData.data[i*4+2] = v;
+    imgData.data[i*4+3] = 255;
+  }
   ctx.putImageData(imgData, 0, 0);
-  document.getElementById('canvasWrap').classList.add('visible');
+}
+
+// ─── RENDER LOG IMAGE ─────────────────────────────────────────────
+// Uses a false-colour (hot) colormap: black→red→yellow→white
+function renderLog(canvas, intensity) {
+  canvas.width  = imgWidth;
+  canvas.height = imgHeight;
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.createImageData(imgWidth, imgHeight);
+  const N = imgWidth * imgHeight;
+
+  let iMax = 0;
+  for (let i = 0; i < N; i++) if (intensity[i] > iMax) iMax = intensity[i];
+
+  const logMax = Math.log10(iMax + 1);
+
+  for (let i = 0; i < N; i++) {
+    const logV = Math.log10(intensity[i] + 1);
+    const t = logMax > 0 ? logV / logMax : 0; // 0→1
+
+    // "Hot" colormap: black(0) → red(0.33) → yellow(0.67) → white(1)
+    let r, g, b;
+    if (t < 1/3) {
+      r = Math.round(t * 3 * 255); g = 0; b = 0;
+    } else if (t < 2/3) {
+      r = 255; g = Math.round((t - 1/3) * 3 * 255); b = 0;
+    } else {
+      r = 255; g = 255; b = Math.round((t - 2/3) * 3 * 255);
+    }
+    imgData.data[i*4]   = r;
+    imgData.data[i*4+1] = g;
+    imgData.data[i*4+2] = b;
+    imgData.data[i*4+3] = 255;
+  }
+  ctx.putImageData(imgData, 0, 0);
+}
+
+// ─── DRAW OVERLAYS (circle + centroid) on a canvas ───────────────
+function drawOverlays(canvas) {
+  const ctx = canvas.getContext('2d');
+  const lw = Math.max(1, imgWidth / 600);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r80, 0, 2 * Math.PI);
+  ctx.strokeStyle = '#00d4a0';
+  ctx.lineWidth = lw * 1.5;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, Math.max(2, imgWidth / 400), 0, 2 * Math.PI);
+  ctx.fillStyle = '#4a9eff';
+  ctx.fill();
+}
+
+// ─── SHOW BOTH PLOTS ─────────────────────────────────────────────
+function showBothPlots(withOverlay) {
+  const canvasLin = document.getElementById('spotCanvas');
+  const canvasLog = document.getElementById('spotCanvasLog');
+
+  renderLinear(canvasLin, intensityData);
+  renderLog(canvasLog, intensityData);
+
+  if (withOverlay && r80 > 0) {
+    drawOverlays(canvasLin);
+    drawOverlays(canvasLog);
+  }
+
+  document.getElementById('titleLinear').textContent = currentFileName + ' — linear';
+  document.getElementById('titleLog').textContent    = currentFileName + ' — log scale';
+  document.getElementById('plotsRow').style.display  = 'flex';
+}
+
+// ─── SHOW IMAGE (button) ──────────────────────────────────────────
+function showImage() {
+  if (!rawData) { alert('Please upload a TIFF file first.'); return; }
+  if (!intensityData) {
+    const result = buildIntensity();
+    intensityData = result.intensity;
+  }
+  showBothPlots(r80 > 0);
 }
 
 // ─── CALCULATE 80% ENCIRCLED ENERGY ──────────────────────────────
 function calculateEE() {
   if (!rawData) { alert('Please upload a TIFF file first.'); return; }
 
-  const N = imgWidth * imgHeight;
-  const intensity = new Float64Array(N);
-  let total = 0;
+  const { intensity, burntCount, dataMax } = buildIntensity();
+  intensityData = intensity;
 
-  for (let i = 0; i < N; i++) {
-    // Use luminance from RGBA (grayscale-weighted for color images)
-    const r = rawData[i*4], g = rawData[i*4+1], b = rawData[i*4+2];
-    const I = 0.2126*r + 0.7152*g + 0.0722*b;
-    intensity[i] = I;
-    total += I;
-  }
+  const N = imgWidth * imgHeight;
+  let total = 0;
+  for (let i = 0; i < N; i++) total += intensity[i];
 
   if (total === 0) { showResult('eeResult', 'Error: image appears to be all black.', true); return; }
 
@@ -636,20 +793,18 @@ function calculateEE() {
   for (let y = 0; y < imgHeight; y++) {
     for (let x = 0; x < imgWidth; x++) {
       const I = intensity[y * imgWidth + x];
-      xSum += x * I;
-      ySum += y * I;
+      xSum += x * I; ySum += y * I;
     }
   }
   cx = xSum / total;
   cy = ySum / total;
 
-  // Radial sort
+  // Radial sort for encircled energy
   const radial = new Array(N);
   for (let y = 0; y < imgHeight; y++) {
     for (let x = 0; x < imgWidth; x++) {
       const idx = y * imgWidth + x;
-      const dr = Math.sqrt((x - cx)**2 + (y - cy)**2);
-      radial[idx] = { r: dr, I: intensity[idx] };
+      radial[idx] = { r: Math.sqrt((x - cx)**2 + (y - cy)**2), I: intensity[idx] };
     }
   }
   radial.sort((a, b) => a.r - b.r);
@@ -665,9 +820,8 @@ function calculateEE() {
   let html = `<div class="result-label">80% Encircled Energy Radius</div>`;
   html += `r₈₀ = ${r80.toFixed(2)} px`;
 
-  const um = parseFloat(document.getElementById('um_per_pixel').value);
+  const um  = parseFloat(document.getElementById('um_per_pixel').value);
   const rdl = parseFloat(document.getElementById('r_dl').value);
-
   if (!isNaN(um) && um > 0) {
     const r_um = r80 * um;
     html += `&nbsp;&nbsp;|&nbsp;&nbsp;${r_um.toFixed(2)} µm`;
@@ -676,29 +830,19 @@ function calculateEE() {
       html += `&nbsp;&nbsp;|&nbsp;&nbsp;Strehl ≈ ${strehl.toFixed(3)}`;
     }
   }
-
-  html += `<br><span style="font-size:11px;color:var(--muted);margin-top:6px;display:block">centroid: (${cx.toFixed(1)}, ${cy.toFixed(1)}) px</span>`;
+  html += `<br><span style="font-size:11px;color:var(--muted);margin-top:6px;display:block">`;
+  html += `centroid: (${cx.toFixed(1)}, ${cy.toFixed(1)}) px`;
+  if (burntCount > 0) html += `&nbsp;&nbsp;|&nbsp;&nbsp;<span style="color:#ffc800">${burntCount} burnt pixel${burntCount>1?'s':''} corrected</span>`;
+  html += `</span>`;
   showResult('eeResult', html);
 
-  // Auto show image
-  showImage();
+  showBothPlots(false);
 }
 
 // ─── DRAW 80% CIRCLE ─────────────────────────────────────────────
 function plotCircle() {
   if (r80 === 0) { alert('Run Calculate r₈₀ first.'); return; }
-  const canvas = document.getElementById('spotCanvas');
-  const ctx = canvas.getContext('2d');
-  ctx.beginPath();
-  ctx.arc(cx, cy, r80, 0, 2 * Math.PI);
-  ctx.strokeStyle = '#00d4a0';
-  ctx.lineWidth = Math.max(1, imgWidth / 500);
-  ctx.stroke();
-  // centroid dot
-  ctx.beginPath();
-  ctx.arc(cx, cy, Math.max(2, imgWidth / 300), 0, 2 * Math.PI);
-  ctx.fillStyle = '#4a9eff';
-  ctx.fill();
+  showBothPlots(true);
 }
 
 // ─── GAUSSIAN BEAM ────────────────────────────────────────────────
