@@ -404,9 +404,9 @@ function decodeTIFF(arrayBuffer) {
     position: relative;
   }
   .canvas-wrap.visible { display: block; }
-  #spotCanvas {
+  .canvas-wrap canvas {
     display: block;
-    max-width: 100%;
+    width: 100%;
     height: auto;
   }
 
@@ -528,6 +528,7 @@ function decodeTIFF(arrayBuffer) {
         <button class="btn btn-secondary" onclick="showImage()">Show Image</button>
         <button class="btn btn-primary" onclick="calculateEE()">Calculate r₈₀</button>
         <button class="btn btn-secondary" onclick="plotCircle()">Draw 80% Circle</button>
+        <button class="btn btn-secondary" onclick="plotDiffractionLimit()">Draw Diffraction Limit</button>
       </div>
 
       <div id="eeResult" class="result-box"></div>
@@ -628,53 +629,77 @@ document.getElementById('upload').addEventListener('change', function(e) {
   reader.readAsArrayBuffer(file);
 });
 
-// ─── BUILD INTENSITY ARRAY (with burnt pixel rejection) ──────────
-// Returns a Float64Array of cleaned intensity values.
-// Burnt pixels (at or near the sensor max) are replaced by the
-// local neighbourhood median so they don't skew the centroid or EE.
+// ─── BUILD INTENSITY ARRAY ───────────────────────────────────────
+// 1. Auto-detects and subtracts the camera noise floor (readout noise)
+//    by finding the most-common low-level value in the histogram.
+// 2. Replaces burnt pixels (saturated) with local 5×5 neighbourhood median.
 function buildIntensity() {
   const N = imgWidth * imgHeight;
   const raw = new Float64Array(N);
 
-  // Determine max possible value from the data range
+  // Build histogram and find data max
+  const hist = new Uint32Array(256);
   let dataMax = 0;
   for (let i = 0; i < N; i++) {
-    const v = rawData[i*4]; // R channel (== G == B for grayscale)
-    if (v > dataMax) dataMax = v;
+    const v = rawData[i * 4]; // R channel (== G == B for grayscale)
     raw[i] = v;
+    hist[v]++;
+    if (v > dataMax) dataMax = v;
   }
 
-  // Burnt threshold: pixels at 255 (8-bit) or within 1% of dataMax
+  // ── Noise floor detection ─────────────────────────────────────
+  // The noise floor is the most-frequently-occurring value in the
+  // range [1, ~10% of max]. Camera readout noise typically lands at
+  // a single value (commonly 1) which dominates the histogram.
+  // We find the peak of hist[1..ceil(0.1*dataMax)] and use that as
+  // the floor to subtract before all calculations.
+  const floorSearchMax = Math.max(2, Math.ceil(dataMax * 0.10));
+  let noisePeak = 0, noisePeakCount = 0;
+  for (let v = 1; v <= floorSearchMax; v++) {
+    if (hist[v] > noisePeakCount) { noisePeakCount = hist[v]; noisePeak = v; }
+  }
+  // Only subtract if this noise value is genuinely dominant
+  // (accounts for > 1% of all pixels)
+  const noiseFloor = (noisePeakCount > N * 0.01) ? noisePeak : 0;
+
+  // ── Burnt pixel threshold ─────────────────────────────────────
   const burnThresh = Math.max(254, dataMax * 0.99);
   let burntCount = 0;
 
-  // Replace burnt pixels with the median of their 5×5 neighbourhood
-  const cleaned = raw.slice();
+  // First pass: subtract noise floor and flag burnt pixels
+  const cleaned = new Float64Array(N);
+  for (let i = 0; i < N; i++) {
+    const v = raw[i];
+    if (v >= burnThresh) { burntCount++; cleaned[i] = -1; } // mark for repair
+    else cleaned[i] = Math.max(0, v - noiseFloor);
+  }
+
+  // Second pass: replace burnt pixels with 5×5 neighbourhood median
   for (let y = 0; y < imgHeight; y++) {
     for (let x = 0; x < imgWidth; x++) {
       const idx = y * imgWidth + x;
-      if (raw[idx] >= burnThresh) {
-        burntCount++;
-        const neighbours = [];
-        for (let dy = -2; dy <= 2; dy++) {
-          for (let dx = -2; dx <= 2; dx++) {
-            const ny = y + dy, nx = x + dx;
-            if (ny >= 0 && ny < imgHeight && nx >= 0 && nx < imgWidth) {
-              const nv = raw[ny * imgWidth + nx];
-              if (nv < burnThresh) neighbours.push(nv);
-            }
+      if (cleaned[idx] !== -1) continue;
+      burntCount; // already counted
+      const nb = [];
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const ny = y + dy, nx = x + dx;
+          if (ny >= 0 && ny < imgHeight && nx >= 0 && nx < imgWidth) {
+            const nv = cleaned[ny * imgWidth + nx];
+            if (nv >= 0) nb.push(nv);
           }
         }
-        if (neighbours.length > 0) {
-          neighbours.sort((a, b) => a - b);
-          cleaned[idx] = neighbours[Math.floor(neighbours.length / 2)];
-        } else {
-          cleaned[idx] = 0; // fully saturated region — zero out
-        }
+      }
+      if (nb.length > 0) {
+        nb.sort((a, b) => a - b);
+        cleaned[idx] = nb[Math.floor(nb.length / 2)];
+      } else {
+        cleaned[idx] = 0;
       }
     }
   }
-  return { intensity: cleaned, burntCount, dataMax };
+
+  return { intensity: cleaned, burntCount, noiseFloor, dataMax };
 }
 
 // ─── RENDER LINEAR IMAGE ──────────────────────────────────────────
@@ -779,7 +804,7 @@ function showImage() {
 function calculateEE() {
   if (!rawData) { alert('Please upload a TIFF file first.'); return; }
 
-  const { intensity, burntCount, dataMax } = buildIntensity();
+  const { intensity, burntCount, noiseFloor, dataMax } = buildIntensity();
   intensityData = intensity;
 
   const N = imgWidth * imgHeight;
@@ -832,6 +857,7 @@ function calculateEE() {
   }
   html += `<br><span style="font-size:11px;color:var(--muted);margin-top:6px;display:block">`;
   html += `centroid: (${cx.toFixed(1)}, ${cy.toFixed(1)}) px`;
+  if (noiseFloor > 0) html += `&nbsp;&nbsp;|&nbsp;&nbsp;<span style="color:#8892a4">noise floor ${noiseFloor} subtracted</span>`;
   if (burntCount > 0) html += `&nbsp;&nbsp;|&nbsp;&nbsp;<span style="color:#ffc800">${burntCount} burnt pixel${burntCount>1?'s':''} corrected</span>`;
   html += `</span>`;
   showResult('eeResult', html);
@@ -843,6 +869,36 @@ function calculateEE() {
 function plotCircle() {
   if (r80 === 0) { alert('Run Calculate r₈₀ first.'); return; }
   showBothPlots(true);
+}
+
+// ─── DRAW DIFFRACTION LIMIT CIRCLE ──────────────────────────────
+function plotDiffractionLimit() {
+  const um  = parseFloat(document.getElementById('um_per_pixel').value);
+  const rdl = parseFloat(document.getElementById('r_dl').value);
+  if (isNaN(um) || um <= 0 || isNaN(rdl) || rdl <= 0) {
+    alert('Please enter both µm/pixel and diffraction limit radius (µm) to draw the diffraction limit circle.');
+    return;
+  }
+  if (!intensityData) { alert('Please run Calculate r\u2080 first.'); return; }
+  const rdl_px = rdl / um;
+  // Ensure plots are visible with overlays
+  showBothPlots(r80 > 0);
+  // Draw DL circle on both canvases in orange
+  [document.getElementById('spotCanvas'), document.getElementById('spotCanvasLog')].forEach(canvas => {
+    const ctx = canvas.getContext('2d');
+    const lw = Math.max(1, imgWidth / 600);
+    ctx.beginPath();
+    ctx.arc(cx, cy, rdl_px, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#ff9500';
+    ctx.lineWidth = lw * 1.5;
+    ctx.setLineDash([Math.max(3, lw*4), Math.max(3, lw*3)]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // label
+    ctx.fillStyle = '#ff9500';
+    ctx.font = `${Math.max(11, Math.round(imgWidth/120))}px IBM Plex Mono, monospace`;
+    ctx.fillText(`DL r=${rdl.toFixed(1)}µm`, cx + rdl_px + 4, cy);
+  });
 }
 
 // ─── GAUSSIAN BEAM ────────────────────────────────────────────────
