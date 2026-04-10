@@ -2,313 +2,770 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Optics Toolkit</title>
-
-<!-- MathJax -->
-<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
-<!-- TIFF DECODER -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOLAUS — Laser Optics Toolkit</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
 <script src="https://unpkg.com/utif@3.1.0/UTIF.min.js"></script>
-
 <style>
-body {
-    font-family: "Segoe UI", Tahoma, sans-serif;
-    margin: 0;
-    background: #f4f6f8;
-}
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
 
-nav {
-    background: #1f2937;
-    padding: 12px;
-    text-align: center;
-}
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --surface2: #1e2230;
+    --border: #2a2f3d;
+    --accent: #00d4a0;
+    --accent2: #4a9eff;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --danger: #ff6b6b;
+  }
 
-nav button {
-    margin: 5px;
-    padding: 10px 18px;
-    border: none;
-    background: #374151;
-    color: white;
-    border-radius: 6px;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  .logo {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+  }
+  .logo span { color: var(--muted); font-weight: 400; }
+
+  /* NAV TABS */
+  nav {
+    display: flex;
+    gap: 4px;
+  }
+  nav button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--muted);
     cursor: pointer;
-}
+    transition: all 0.15s;
+  }
+  nav button:hover { color: var(--text); border-color: var(--border); }
+  nav button.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(0, 212, 160, 0.08);
+  }
 
-.container {
-    max-width: 900px;
-    margin: auto;
-    padding: 30px;
-}
+  /* CONTENT */
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
 
-.card {
-    background: white;
-    padding: 25px;
-    border-radius: 10px;
-    margin-bottom: 25px;
-}
+  .tab { display: none; }
+  .tab.active { display: block; }
 
-.tab { display: none; }
-.active { display: block; }
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card h3 {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    margin: 20px 0 8px;
+  }
+  .card p {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
 
-canvas {
-    margin-top: 15px;
+  /* HOME TAB */
+  .hero-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .hero-title span { color: var(--accent); }
+  .hero-sub {
+    font-size: 15px;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 24px 0;
+  }
+  .feature-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px;
+  }
+  .feature-item .f-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent2);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .feature-item .f-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .logo-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 14px;
+  }
+  .dev-line {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 12px;
+  }
+  .dev-line a { color: var(--accent); text-decoration: none; }
+  .dev-line a:hover { text-decoration: underline; }
+
+  /* FORM ELEMENTS */
+  .input-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+    align-items: flex-end;
+  }
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    min-width: 160px;
+  }
+  .input-group label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  input[type="text"], input[type="number"] {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  input[type="text"]:focus, input[type="number"]:focus {
+    border-color: var(--accent);
+  }
+  input[type="file"] {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    cursor: pointer;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  input[type="file"]:hover { border-color: var(--accent); }
+
+  .btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 9px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #0d0f14;
+    border: 1px solid var(--accent);
+  }
+  .btn-primary:hover { background: #00f0b8; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+  }
+  .btn-secondary:hover { background: rgba(74, 158, 255, 0.1); }
+  .btn-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  /* RESULT BOX */
+  .result-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin-top: 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    color: var(--accent);
+    display: none;
+  }
+  .result-box.visible { display: block; }
+  .result-box .result-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  /* CANVAS */
+  .canvas-wrap {
+    margin-top: 20px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: #000;
+    display: none;
+    position: relative;
+  }
+  .canvas-wrap.visible { display: block; }
+  #spotCanvas {
+    display: block;
     max-width: 100%;
-    border: 1px solid #ccc;
-}
+    height: auto;
+  }
 
-button {
-    margin-top: 10px;
-    padding: 10px;
-}
+  /* GAUSSIAN PLOT */
+  #gaussianCanvas {
+    display: block;
+    max-width: 100%;
+    margin-top: 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface2);
+  }
+
+  /* EQUATION BLOCK */
+  .eq-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    text-align: center;
+    font-size: 15px;
+    color: var(--text);
+  }
+
+  /* STATUS badge */
+  .status-badge {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-left: 8px;
+  }
+  .status-ok { background: rgba(0,212,160,0.15); color: var(--accent); }
+  .status-wait { background: rgba(255,200,0,0.12); color: #ffc800; }
+
+  #fileStatus { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 6px; min-height: 18px; }
 </style>
 </head>
-
 <body>
 
-<nav>
-    <button onclick="showTab('home')">Home</button>
-    <button onclick="showTab('strehl')">Strehl Tool</button>
-    <button onclick="showTab('rayleigh')">Rayleigh</button>
-    <button onclick="showTab('gaussian')">Gaussian</button>
-</nav>
+<header>
+  <div class="logo">LOLAUS <span>// laser optics toolkit</span></div>
+  <nav>
+    <button class="active" onclick="showTab('home', this)">Home</button>
+    <button onclick="showTab('spot', this)">Spot Calculation</button>
+    <button onclick="showTab('gaussian', this)">Gaussian</button>
+  </nav>
+</header>
 
 <div class="container">
 
-<!-- HOME -->
-<div id="home" class="tab active">
+  <!-- ═══ HOME ═══ -->
+  <div id="home" class="tab active">
     <div class="card">
-        <h1>Optics Toolkit</h1>
+      <div class="hero-title">Laser <span>Optics</span> Toolkit</div>
+      <div class="hero-sub">Diagnostics and beam analysis tools for laser plasma physics</div>
 
-        <div style="display:flex;justify-content:center;gap:40px;">
-            <img src="zeus_logo.png" height="80">
-            <img src="nsf_logo.png" height="80">
+      <div class="feature-grid">
+        <div class="feature-item">
+          <div class="f-label">Spot Calculation</div>
+          <div class="f-desc">Upload a TIFF beam image and compute the 80% encircled energy radius. Optionally provide a µm/pixel scale to get physical units.</div>
         </div>
+        <div class="feature-item">
+          <div class="f-label">Gaussian Beam</div>
+          <div class="f-desc">Compute the beam waist w(z) at a distance z from focus given w₀ and wavelength λ. Plots the full propagation profile.</div>
+        </div>
+      </div>
 
-        <p>Laser diagnostics toolkit. Contributions welcome.</p>
+      <p>This toolkit is designed for quick in-lab diagnostics. All processing runs locally in your browser — no data is uploaded to any server.</p>
 
-        <p>
-        Developer:
-        <a href="https://sites.google.com/view/jeremy-rebenstock/about" target="_blank">
-        Jeremy Rebenstock
-        </a>
-        </p>
+      <div class="logo-row">
+        <div class="logo-placeholder">⚡ ZEUS Facility</div>
+        <div class="logo-placeholder">◈ NSF</div>
+        <div style="flex:1"></div>
+        <div class="dev-line">Developer: <a href="https://sites.google.com/view/jeremy-rebenstock/about" target="_blank">Jeremy Rebenstock</a></div>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- STREHL TOOL -->
-<div id="strehl" class="tab">
+  <!-- ═══ SPOT CALCULATION ═══ -->
+  <div id="spot" class="tab">
     <div class="card">
-        <h2>Encircled Energy & Strehl</h2>
+      <h2>Spot Calculation — 80% Encircled Energy</h2>
 
-        \[
-        E(r) = \int_0^r I(r') 2\pi r' dr'
-        \]
+      <div class="eq-block">
+        \( E(r) = \displaystyle\int_0^r I(r')\, 2\pi r'\, dr' \quad\Rightarrow\quad r_{80} : E(r_{80}) = 0.8\, E_\text{total} \)
+      </div>
 
-        <input type="file" id="upload"><br>
+      <p>Upload a TIFF beam profile image. The algorithm computes the intensity centroid, then finds the radius containing 80% of the total encircled energy.</p>
 
-        <input id="um_per_pixel" placeholder="µm per pixel (optional)">
-        <input id="r_dl" placeholder="Diffraction limit (µm, optional)"><br>
+      <input type="file" id="upload" accept=".tif,.tiff">
+      <div id="fileStatus">No file loaded.</div>
 
-        <button onclick="showImage()">Show Uploaded Image</button>
-        <button onclick="calculateEE()">Calculate Encircled Energy</button>
-        <button onclick="plotCircle()">Plot 80% Radius</button>
+      <div class="input-row">
+        <div class="input-group">
+          <label>µm per pixel (optional)</label>
+          <input type="number" id="um_per_pixel" placeholder="e.g. 3.45" step="any" min="0">
+        </div>
+        <div class="input-group">
+          <label>Diffraction limit radius (µm, optional)</label>
+          <input type="number" id="r_dl" placeholder="e.g. 5.0" step="any" min="0">
+        </div>
+      </div>
 
-        <canvas id="canvas"></canvas>
+      <div class="btn-group">
+        <button class="btn btn-secondary" onclick="showImage()">Show Image</button>
+        <button class="btn btn-primary" onclick="calculateEE()">Calculate r₈₀</button>
+        <button class="btn btn-secondary" onclick="plotCircle()">Draw 80% Circle</button>
+      </div>
 
-        <div id="result"></div>
+      <div id="eeResult" class="result-box"></div>
+
+      <div id="canvasWrap" class="canvas-wrap">
+        <canvas id="spotCanvas"></canvas>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- RAYLEIGH -->
-<div id="rayleigh" class="tab">
+  <!-- ═══ GAUSSIAN ═══ -->
+  <div id="gaussian" class="tab">
     <div class="card">
-        \[
-        w_0 \approx \frac{\lambda f/\#}{\pi}, \quad
-        z_R = \frac{\pi w_0^2}{\lambda}
-        \]
+      <h2>Gaussian Beam Propagation</h2>
 
-        <input id="fnum" placeholder="f-number">
-        <input id="lambda" placeholder="λ (m)">
-        <button onclick="calcRayleigh()">Calculate</button>
+      <div class="eq-block">
+        \( w(z) = w_0\,\sqrt{1 + \!\left(\dfrac{z}{z_R}\right)^{\!2}}, \qquad z_R = \dfrac{\pi w_0^2}{\lambda} \)
+      </div>
 
-        <div id="rayleighResult"></div>
+      <p>Enter the beam waist w₀ and wavelength λ to compute the beam size w(z) at a distance z from the focus. The plot shows the full beam envelope.</p>
+
+      <div class="input-row">
+        <div class="input-group">
+          <label>Beam waist w₀ (m)</label>
+          <input type="number" id="w0_g" placeholder="e.g. 50e-6" step="any">
+        </div>
+        <div class="input-group">
+          <label>Wavelength λ (m)</label>
+          <input type="number" id="lambda_g" placeholder="e.g. 800e-9" step="any">
+        </div>
+        <div class="input-group">
+          <label>Distance z (m)</label>
+          <input type="number" id="z_g" placeholder="e.g. 0.05" step="any">
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="calcGaussian()">Calculate & Plot</button>
+      </div>
+
+      <div id="gaussianResult" class="result-box"></div>
+
+      <canvas id="gaussianCanvas" style="display:none;"></canvas>
     </div>
-</div>
+  </div>
 
-<!-- GAUSSIAN -->
-<div id="gaussian" class="tab">
-    <div class="card">
-        \[
-        w(z) = w_0 \sqrt{1 + \left(\frac{z}{z_R}\right)^2}
-        \]
-
-        <input id="w0_g" placeholder="w0 (m)">
-        <input id="lambda_g" placeholder="λ (m)">
-        <input id="z_g" placeholder="z (m)">
-        <button onclick="calcGaussian()">Calculate</button>
-
-        <div id="gaussianResult"></div>
-    </div>
-</div>
-
-</div>
+</div><!-- /container -->
 
 <script>
-let rawData = null;
-let width = 0;
-let height = 0;
-let x0=0, y0=0, r80=0;
-
-// TAB SWITCH
-function showTab(tabId) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
+// ─── TAB SWITCHING ────────────────────────────────────────────────
+function showTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (window.MathJax) MathJax.typesetPromise();
 }
 
-// LOAD FILE
+// ─── TIFF LOAD ────────────────────────────────────────────────────
+let rawData = null, imgWidth = 0, imgHeight = 0;
+let cx = 0, cy = 0, r80 = 0;
+
 document.getElementById('upload').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+  const file = e.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('fileStatus');
+  statusEl.innerHTML = 'Loading <span class="status-badge status-wait">reading…</span>';
 
-    const reader = new FileReader();
-
-    reader.onload = function(ev) {
-
-        if (file.name.toLowerCase().includes(".tif")) {
-
-            let ifds = UTIF.decode(ev.target.result);
-            UTIF.decodeImage(ev.target.result, ifds[0]);
-
-            rawData = UTIF.toRGBA8(ifds[0]);
-            width = ifds[0].width;
-            height = ifds[0].height;
-        }
-    };
-
-    reader.readAsArrayBuffer(file);
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const buf = ev.target.result;
+      const ifds = UTIF.decode(buf);
+      UTIF.decodeImage(buf, ifds[0]);
+      rawData = UTIF.toRGBA8(ifds[0]);
+      imgWidth  = ifds[0].width;
+      imgHeight = ifds[0].height;
+      statusEl.innerHTML = `${file.name} &nbsp;<span class="status-badge status-ok">${imgWidth} × ${imgHeight} px</span>`;
+    } catch(err) {
+      statusEl.innerHTML = `<span style="color:var(--danger)">Error decoding TIFF: ${err.message}</span>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
 });
 
-// SHOW IMAGE
+// ─── SHOW IMAGE ───────────────────────────────────────────────────
 function showImage() {
-    if (!rawData) return;
-
-    let canvas = document.getElementById('canvas');
-    let ctx = canvas.getContext('2d');
-
-    canvas.width = width;
-    canvas.height = height;
-
-    let imgData = ctx.createImageData(width, height);
-    imgData.data.set(rawData);
-
-    ctx.putImageData(imgData, 0, 0);
+  if (!rawData) { alert('Please upload a TIFF file first.'); return; }
+  const canvas = document.getElementById('spotCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width  = imgWidth;
+  canvas.height = imgHeight;
+  const imgData = ctx.createImageData(imgWidth, imgHeight);
+  imgData.data.set(rawData);
+  ctx.putImageData(imgData, 0, 0);
+  document.getElementById('canvasWrap').classList.add('visible');
 }
 
-// CALCULATE EE
+// ─── CALCULATE 80% ENCIRCLED ENERGY ──────────────────────────────
 function calculateEE() {
-    if (!rawData) return;
+  if (!rawData) { alert('Please upload a TIFF file first.'); return; }
 
-    let intensity = new Array(width*height);
-    let total = 0;
+  const N = imgWidth * imgHeight;
+  const intensity = new Float64Array(N);
+  let total = 0;
 
-    for (let i=0; i<rawData.length; i+=4) {
-        let idx = i/4;
-        let I = rawData[i]; // grayscale assumption
-        intensity[idx] = I;
-        total += I;
+  for (let i = 0; i < N; i++) {
+    // Use luminance from RGBA (grayscale-weighted for color images)
+    const r = rawData[i*4], g = rawData[i*4+1], b = rawData[i*4+2];
+    const I = 0.2126*r + 0.7152*g + 0.0722*b;
+    intensity[i] = I;
+    total += I;
+  }
+
+  if (total === 0) { showResult('eeResult', 'Error: image appears to be all black.', true); return; }
+
+  // Centroid
+  let xSum = 0, ySum = 0;
+  for (let y = 0; y < imgHeight; y++) {
+    for (let x = 0; x < imgWidth; x++) {
+      const I = intensity[y * imgWidth + x];
+      xSum += x * I;
+      ySum += y * I;
     }
+  }
+  cx = xSum / total;
+  cy = ySum / total;
 
-    // centroid
-    let xSum=0, ySum=0;
-
-    for (let y=0;y<height;y++){
-        for (let x=0;x<width;x++){
-            let I = intensity[y*width+x];
-            xSum += x*I;
-            ySum += y*I;
-        }
+  // Radial sort
+  const radial = new Array(N);
+  for (let y = 0; y < imgHeight; y++) {
+    for (let x = 0; x < imgWidth; x++) {
+      const idx = y * imgWidth + x;
+      const dr = Math.sqrt((x - cx)**2 + (y - cy)**2);
+      radial[idx] = { r: dr, I: intensity[idx] };
     }
+  }
+  radial.sort((a, b) => a.r - b.r);
 
-    x0 = xSum/total;
-    y0 = ySum/total;
+  const target = 0.8 * total;
+  let cumulative = 0;
+  r80 = 0;
+  for (let i = 0; i < radial.length; i++) {
+    cumulative += radial[i].I;
+    if (cumulative >= target) { r80 = radial[i].r; break; }
+  }
 
-    let radial=[];
+  let html = `<div class="result-label">80% Encircled Energy Radius</div>`;
+  html += `r₈₀ = ${r80.toFixed(2)} px`;
 
-    for (let y=0;y<height;y++){
-        for (let x=0;x<width;x++){
-            let I = intensity[y*width+x];
-            let r = Math.sqrt((x-x0)**2+(y-y0)**2);
-            radial.push({r,I});
-        }
+  const um = parseFloat(document.getElementById('um_per_pixel').value);
+  const rdl = parseFloat(document.getElementById('r_dl').value);
+
+  if (!isNaN(um) && um > 0) {
+    const r_um = r80 * um;
+    html += `&nbsp;&nbsp;|&nbsp;&nbsp;${r_um.toFixed(2)} µm`;
+    if (!isNaN(rdl) && rdl > 0) {
+      const strehl = (rdl / r_um) ** 2;
+      html += `&nbsp;&nbsp;|&nbsp;&nbsp;Strehl ≈ ${strehl.toFixed(3)}`;
     }
+  }
 
-    radial.sort((a,b)=>a.r-b.r);
+  html += `<br><span style="font-size:11px;color:var(--muted);margin-top:6px;display:block">centroid: (${cx.toFixed(1)}, ${cy.toFixed(1)}) px</span>`;
+  showResult('eeResult', html);
 
-    let cumulative=0;
-    let target=0.8*total;
-
-    for (let i=0;i<radial.length;i++){
-        cumulative += radial[i].I;
-        if (cumulative>=target){
-            r80 = radial[i].r;
-            break;
-        }
-    }
-
-    let result = `r₈₀ = ${r80.toFixed(2)} pixels`;
-
-    let um = parseFloat(document.getElementById('um_per_pixel').value);
-    let rdl = parseFloat(document.getElementById('r_dl').value);
-
-    if (!isNaN(um)) {
-        let r_um = r80*um;
-        result += ` (${r_um.toFixed(2)} µm)`;
-
-        if (!isNaN(rdl)) {
-            let strehl = (rdl/r_um)**2;
-            result += ` | Strehl ≈ ${strehl.toFixed(3)}`;
-        }
-    }
-
-    document.getElementById('result').innerText = result;
+  // Auto show image
+  showImage();
 }
 
-// PLOT
+// ─── DRAW 80% CIRCLE ─────────────────────────────────────────────
 function plotCircle() {
-    let canvas = document.getElementById('canvas');
-    let ctx = canvas.getContext('2d');
-
-    ctx.beginPath();
-    ctx.arc(x0,y0,r80,0,2*Math.PI);
-    ctx.strokeStyle="red";
-    ctx.lineWidth=2;
-    ctx.stroke();
+  if (r80 === 0) { alert('Run Calculate r₈₀ first.'); return; }
+  const canvas = document.getElementById('spotCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.beginPath();
+  ctx.arc(cx, cy, r80, 0, 2 * Math.PI);
+  ctx.strokeStyle = '#00d4a0';
+  ctx.lineWidth = Math.max(1, imgWidth / 500);
+  ctx.stroke();
+  // centroid dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, Math.max(2, imgWidth / 300), 0, 2 * Math.PI);
+  ctx.fillStyle = '#4a9eff';
+  ctx.fill();
 }
 
-// RAYLEIGH
-function calcRayleigh() {
-    let fnum=parseFloat(document.getElementById('fnum').value);
-    let lambda=parseFloat(document.getElementById('lambda').value);
-
-    let w0=lambda*fnum/Math.PI;
-    let zR=Math.PI*w0*w0/lambda;
-
-    document.getElementById('rayleighResult').innerText =
-        `zR = ${zR.toExponential(3)} m`;
-}
-
-// GAUSSIAN
+// ─── GAUSSIAN BEAM ────────────────────────────────────────────────
 function calcGaussian() {
-    let w0=parseFloat(document.getElementById('w0_g').value);
-    let lambda=parseFloat(document.getElementById('lambda_g').value);
-    let z=parseFloat(document.getElementById('z_g').value);
+  const w0     = parseFloat(document.getElementById('w0_g').value);
+  const lambda = parseFloat(document.getElementById('lambda_g').value);
+  const z      = parseFloat(document.getElementById('z_g').value);
 
-    let zR=Math.PI*w0*w0/lambda;
-    let w=w0*Math.sqrt(1+(z/zR)**2);
+  if (isNaN(w0) || isNaN(lambda) || isNaN(z) || w0 <= 0 || lambda <= 0) {
+    showResult('gaussianResult', 'Please enter valid positive values for w₀ and λ.', true);
+    return;
+  }
 
-    document.getElementById('gaussianResult').innerText =
-        `w(z) = ${w.toExponential(3)} m`;
+  const zR = Math.PI * w0 * w0 / lambda;
+  const wz = w0 * Math.sqrt(1 + (z / zR) ** 2);
+
+  let html = `<div class="result-label">Result at z = ${fmtSci(z)} m</div>`;
+  html += `z_R = ${fmtSci(zR)} m&nbsp;&nbsp;|&nbsp;&nbsp;w(z) = ${fmtSci(wz)} m`;
+  showResult('gaussianResult', html);
+
+  drawGaussianPlot(w0, lambda, zR, z);
+}
+
+function drawGaussianPlot(w0, lambda, zR, zTarget) {
+  const canvas = document.getElementById('gaussianCanvas');
+  canvas.style.display = 'block';
+  const W = 800, H = 260;
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const pad = { t: 20, b: 40, l: 64, r: 24 };
+  const pw = W - pad.l - pad.r;
+  const ph = H - pad.t - pad.b;
+
+  ctx.fillStyle = '#1e2230';
+  ctx.fillRect(0, 0, W, H);
+
+  // Range: -4zR to +4zR
+  const zMin = -4 * zR, zMax = 4 * zR;
+  const wMax = w0 * Math.sqrt(1 + 16) * 1.05;
+
+  const toX = z => pad.l + (z - zMin) / (zMax - zMin) * pw;
+  const toY = w => pad.t + ph - (w / wMax) * ph;
+
+  // Grid
+  ctx.strokeStyle = '#2a2f3d';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (i / 4) * ph;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + pw, y); ctx.stroke();
+  }
+  for (let i = -4; i <= 4; i++) {
+    const z = i * zR;
+    const x = toX(z);
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + ph); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = '#3a4050';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t + ph); ctx.lineTo(pad.l + pw, pad.t + ph); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, pad.t + ph); ctx.stroke();
+
+  // Beam envelope (upper)
+  ctx.strokeStyle = '#00d4a0';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  const steps = 400;
+  for (let i = 0; i <= steps; i++) {
+    const z = zMin + (i / steps) * (zMax - zMin);
+    const w = w0 * Math.sqrt(1 + (z / zR) ** 2);
+    const x = toX(z), y = toY(w);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Beam envelope (lower, mirror)
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const z = zMin + (i / steps) * (zMax - zMin);
+    const w = w0 * Math.sqrt(1 + (z / zR) ** 2);
+    const x = toX(z), y = toY(-w) + 2 * (pad.t + ph / 2) - (pad.t + ph / 2);
+    // reflect around axis (w=0 line at bottom)
+    const yr = pad.t + ph + (pad.t + ph - toY(w));
+    if (yr > pad.t && yr < pad.t + ph + 2) {
+      i === 0 ? ctx.moveTo(x, yr) : ctx.lineTo(x, yr);
+    }
+  }
+  ctx.stroke();
+
+  // Fill between envelopes
+  ctx.fillStyle = 'rgba(0,212,160,0.07)';
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const z = zMin + (i / steps) * (zMax - zMin);
+    const w = w0 * Math.sqrt(1 + (z / zR) ** 2);
+    const x = toX(z), y = toY(w);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  // bottom edge (w=0)
+  ctx.lineTo(toX(zMax), pad.t + ph);
+  ctx.lineTo(toX(zMin), pad.t + ph);
+  ctx.closePath();
+  ctx.fill();
+
+  // w₀ marker
+  ctx.strokeStyle = '#4a9eff';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 3]);
+  const x0px = toX(0);
+  ctx.beginPath(); ctx.moveTo(x0px, pad.t); ctx.lineTo(x0px, pad.t + ph); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // z target marker
+  const xtgt = toX(zTarget);
+  if (xtgt >= pad.l && xtgt <= pad.l + pw) {
+    const wt = w0 * Math.sqrt(1 + (zTarget / zR) ** 2);
+    const ytgt = toY(wt);
+    ctx.strokeStyle = '#ffc800';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(xtgt, pad.t); ctx.lineTo(xtgt, pad.t + ph); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ffc800';
+    ctx.beginPath(); ctx.arc(xtgt, ytgt, 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = '#ffc800';
+    ctx.font = '11px IBM Plex Mono, monospace';
+    ctx.fillText(`w(z)=${fmtSci(wt)}m`, xtgt + 7, ytgt - 6);
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#8892a4';
+  ctx.font = '11px IBM Plex Mono, monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText(`${fmtSci(wMax)}`, pad.l - 4, pad.t + 6);
+  ctx.fillText(`0`, pad.l - 4, pad.t + ph + 4);
+  ctx.textAlign = 'center';
+  ctx.fillText('z / z_R', pad.l + pw / 2, H - 4);
+  ctx.fillText('-4', toX(-4*zR), pad.t + ph + 14);
+  ctx.fillText('0', toX(0), pad.t + ph + 14);
+  ctx.fillText('+4', toX(4*zR), pad.t + ph + 14);
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#4a9eff';
+  ctx.fillText('z=0 (focus)', x0px + 5, pad.t + 12);
+
+  // Y label
+  ctx.save();
+  ctx.translate(14, pad.t + ph / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = '#8892a4';
+  ctx.textAlign = 'center';
+  ctx.fillText('w(z)  [m]', 0, 0);
+  ctx.restore();
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────
+function fmtSci(v) {
+  if (v === 0) return '0';
+  const exp = Math.floor(Math.log10(Math.abs(v)));
+  if (Math.abs(exp) < 4) return parseFloat(v.toPrecision(4)).toString();
+  return v.toExponential(3);
+}
+
+function showResult(id, html, isError) {
+  const el = document.getElementById(id);
+  el.innerHTML = html;
+  el.classList.add('visible');
+  if (isError) el.style.borderLeftColor = 'var(--danger)';
+  else el.style.borderLeftColor = 'var(--accent)';
 }
 </script>
-
 </body>
 </html>
