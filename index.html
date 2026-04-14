@@ -456,6 +456,37 @@ function decodeTIFF(arrayBuffer) {
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* RESULTS TABLE */
+  #resultsTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+  #resultsTable th {
+    text-align: left;
+    padding: 7px 12px;
+    background: var(--surface2);
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  #resultsTable td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  #resultsTable tbody tr:last-child td { border-bottom: none; }
+  #resultsTable tbody tr:hover td { background: var(--surface2); }
+  #resultsTable td.accent { color: var(--accent); font-weight: 500; }
+  #resultsTable td.warn   { color: #ffc800; }
+  #resultsTable td.muted  { color: var(--muted); }
+  #resultsTable td.fname  { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11px; }
 </style>
 </head>
 <body>
@@ -475,7 +506,7 @@ function decodeTIFF(arrayBuffer) {
   <div id="home" class="tab active">
     <div class="card">
       <div class="hero-title">Laser <span>Optics</span> Toolkit</div>
-      <div class="hero-sub">Laser OnLine Analysis for Users of pettawatt Systems (LOLAUS)</div>
+      <div class="hero-sub">Diagnostics and beam analysis tools for laser plasma physics</div>
 
       <div class="feature-grid">
         <div class="feature-item">
@@ -515,11 +546,11 @@ function decodeTIFF(arrayBuffer) {
 
       <div class="input-row">
         <div class="input-group">
-          <label>Microns per pixel (optional)</label>
+          <label>µm per pixel (optional)</label>
           <input type="number" id="um_per_pixel" placeholder="e.g. 3.45" step="any" min="0">
         </div>
         <div class="input-group">
-          <label>Diffraction limit radius (microns, optional)</label>
+          <label>Diffraction limit radius (µm, optional)</label>
           <input type="number" id="r_dl" placeholder="e.g. 5.0" step="any" min="0">
         </div>
       </div>
@@ -532,6 +563,7 @@ function decodeTIFF(arrayBuffer) {
       </div>
 
       <div id="eeResult" class="result-box"></div>
+      <div id="dlResult" class="result-box" style="border-left-color:#ff9500;"></div>
 
       <div id="plotsRow" style="display:none; flex-wrap:wrap; gap:12px; margin-top:20px;">
         <div style="flex:1; min-width:280px;">
@@ -547,6 +579,29 @@ function decodeTIFF(arrayBuffer) {
           </div>
         </div>
       </div>
+
+      <!-- Results table -->
+      <div id="resultsTableWrap" style="margin-top:24px; display:none;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em;">Measurement Log</span>
+          <button class="btn btn-secondary" style="padding:5px 12px; font-size:11px;" onclick="clearTable()">Clear</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>r₈₀ (px)</th>
+                <th>r₈₀ (µm)</th>
+                <th>DL (µm)</th>
+                <th>Strehl</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -675,15 +730,14 @@ function buildIntensity() {
   }
 
   // Second pass: replace burnt pixels with 5×5 neighbourhood median
-  // Changed to 3x3 ? 
   for (let y = 0; y < imgHeight; y++) {
     for (let x = 0; x < imgWidth; x++) {
       const idx = y * imgWidth + x;
       if (cleaned[idx] !== -1) continue;
       burntCount; // already counted
       const nb = [];
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
           const ny = y + dy, nx = x + dx;
           if (ny >= 0 && ny < imgHeight && nx >= 0 && nx < imgWidth) {
             const nv = cleaned[ny * imgWidth + nx];
@@ -875,16 +929,30 @@ function plotCircle() {
 // ─── DRAW DIFFRACTION LIMIT CIRCLE ──────────────────────────────
 function plotDiffractionLimit() {
   const um  = parseFloat(document.getElementById('um_per_pixel').value);
-  const rdl = parseFloat(document.getElementById('r_dl').value);
+  const rdl = parseFloat(document.getElementById('r_dl').value); // µm
   if (isNaN(um) || um <= 0 || isNaN(rdl) || rdl <= 0) {
     alert('Please enter both µm/pixel and diffraction limit radius (µm) to draw the diffraction limit circle.');
     return;
   }
   if (!intensityData) { alert('Please run Calculate r\u2080 first.'); return; }
+
   const rdl_px = rdl / um;
-  // Ensure plots are visible with overlays
+  const r80_um = r80 * um;
+  // Strehl: (DL_radius / measured_radius)^2 — ratio of areas
+  const strehl = (rdl / r80_um) ** 2;
+
+  // Show Strehl in a dedicated result box
+  let shtml = `<div class="result-label">Diffraction Limit & Strehl Ratio</div>`;
+  shtml += `DL radius = ${rdl.toFixed(2)} µm (${rdl_px.toFixed(1)} px)`;
+  shtml += `&nbsp;&nbsp;|&nbsp;&nbsp;r₈₀ = ${r80_um.toFixed(2)} µm`;
+  shtml += `&nbsp;&nbsp;|&nbsp;&nbsp;<strong>Strehl ≈ ${strehl.toFixed(3)}</strong>`;
+  if (strehl > 1) shtml += `<span style="color:#ffc800;">&nbsp;(> 1: beam tighter than DL estimate)</span>`;
+  showResult('dlResult', shtml);
+
+  // Ensure plots are visible with 80% circle overlays
   showBothPlots(r80 > 0);
-  // Draw DL circle on both canvases in orange
+
+  // Draw DL circle on both canvases in orange/dashed
   [document.getElementById('spotCanvas'), document.getElementById('spotCanvasLog')].forEach(canvas => {
     const ctx = canvas.getContext('2d');
     const lw = Math.max(1, imgWidth / 600);
@@ -895,11 +963,36 @@ function plotDiffractionLimit() {
     ctx.setLineDash([Math.max(3, lw*4), Math.max(3, lw*3)]);
     ctx.stroke();
     ctx.setLineDash([]);
-    // label
     ctx.fillStyle = '#ff9500';
-    ctx.font = `${Math.max(11, Math.round(imgWidth/120))}px IBM Plex Mono, monospace`;
-    ctx.fillText(`DL r=${rdl.toFixed(1)}µm`, cx + rdl_px + 4, cy);
+    const fs = Math.max(11, Math.round(imgWidth / 120));
+    ctx.font = `${fs}px IBM Plex Mono, monospace`;
+    ctx.fillText(`DL ${rdl.toFixed(1)}µm`, cx + rdl_px + 4, cy - fs);
+    ctx.fillText(`Strehl ${strehl.toFixed(3)}`, cx + rdl_px + 4, cy + fs * 0.2);
   });
+
+  // Push row to measurement log table
+  addTableRow(currentFileName, r80, r80_um, rdl, strehl);
+}
+
+// ─── MEASUREMENT LOG TABLE ───────────────────────────────────────
+function addTableRow(fname, r80px, r80um, dlUm, strehl) {
+  const tbody = document.getElementById('resultsBody');
+  const tr = document.createElement('tr');
+  const strehlStr = strehl.toFixed(3);
+  const strehlClass = strehl >= 0.8 ? 'accent' : strehl >= 0.5 ? '' : 'warn';
+  tr.innerHTML = `
+    <td class="fname" title="${fname}">${fname}</td>
+    <td class="accent">${r80px.toFixed(2)}</td>
+    <td>${r80um.toFixed(2)}</td>
+    <td class="muted">${dlUm.toFixed(2)}</td>
+    <td class="${strehlClass}">${strehlStr}</td>`;
+  tbody.appendChild(tr);
+  document.getElementById('resultsTableWrap').style.display = 'block';
+}
+
+function clearTable() {
+  document.getElementById('resultsBody').innerHTML = '';
+  document.getElementById('resultsTableWrap').style.display = 'none';
 }
 
 // ─── GAUSSIAN BEAM ────────────────────────────────────────────────
