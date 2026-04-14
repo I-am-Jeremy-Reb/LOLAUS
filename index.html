@@ -591,11 +591,8 @@ function decodeTIFF(arrayBuffer) {
             <thead>
               <tr>
                 <th>File</th>
-                <th>Centroid (px)</th> 
                 <th>r₈₀ (px)</th>
                 <th>r₈₀ (µm)</th>
-                <th>1/e² Radius (µm)</th>
-                <th>µm/pixel</th>
                 <th>DL (µm)</th>
                 <th>Strehl</th>
               </tr>
@@ -1003,45 +1000,21 @@ function plotDiffractionLimit() {
   });
 
   // Push row to measurement log table
-  const um = parseFloat(document.getElementById('um_per_pixel').value);
-
-  addTableRow(
-    currentFileName,
-    r80,
-    r80_um,
-    rdl,
-    strehl,
-    cx,
-    cy,
-    um
-  );
+  addTableRow(currentFileName, r80, r80_um, rdl, strehl);
+}
 
 // ─── MEASUREMENT LOG TABLE ───────────────────────────────────────
-function addTableRow(fname, r80px, r80um, dlUm, strehl, cx, cy, umPerPixel) {
-
-  let w_e2 = null;
-
-  if (!isNaN(r80um) && r80um > 0) {
-    w_e2 = r80um / 0.64; // Gaussian relation
-  }
-
+function addTableRow(fname, r80px, r80um, dlUm, strehl) {
   const tbody = document.getElementById('resultsBody');
   const tr = document.createElement('tr');
-
-  const strehlStr = strehl ? strehl.toFixed(3) : '--';
+  const strehlStr = strehl.toFixed(3);
   const strehlClass = strehl >= 0.8 ? 'accent' : strehl >= 0.5 ? '' : 'warn';
-
   tr.innerHTML = `
     <td class="fname" title="${fname}">${fname}</td>
-    <td>(${cx.toFixed(1)}, ${cy.toFixed(1)})</td>
     <td class="accent">${r80px.toFixed(2)}</td>
-    <td>${!isNaN(r80um) ? r80um.toFixed(2) : '--'}</td>
-    <td>${w_e2 ? w_e2.toFixed(2) : '--'}</td>
-    <td>${!isNaN(umPerPixel) ? umPerPixel.toFixed(2) : '--'}</td>
-    <td class="muted">${dlUm ? dlUm.toFixed(2) : '--'}</td>
-    <td class="${strehlClass}">${strehlStr}</td>
-  `;
-
+    <td>${r80um.toFixed(2)}</td>
+    <td class="muted">${dlUm.toFixed(2)}</td>
+    <td class="${strehlClass}">${strehlStr}</td>`;
   tbody.appendChild(tr);
   document.getElementById('resultsTableWrap').style.display = 'block';
 }
@@ -1220,5 +1193,6 @@ function showResult(id, html, isError) {
   if (isError) el.style.borderLeftColor = 'var(--danger)';
   else el.style.borderLeftColor = 'var(--accent)';
 }
+</script>
 </body>
 </html>
