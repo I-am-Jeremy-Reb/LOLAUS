@@ -868,16 +868,45 @@ function calculateEE() {
 
   if (total === 0) { showResult('eeResult', 'Error: image appears to be all black.', true); return; }
 
-  // Centroid
-  let xSum = 0, ySum = 0;
+// ─── ROBUST CENTROID (thresholded) ───────────────────────────────
+
+// Find max intensity
+let Imax = 0;
+for (let i = 0; i < N; i++) {
+  if (intensity[i] > Imax) Imax = intensity[i];
+}
+
+// Threshold (adjustable!)
+const threshold = 0.05 * Imax;  // 5% of peak — very robust
+
+let xSum = 0, ySum = 0, weightSum = 0;
+
+for (let y = 0; y < imgHeight; y++) {
+  for (let x = 0; x < imgWidth; x++) {
+    const I = intensity[y * imgWidth + x];
+
+    if (I < threshold) continue;  // IGNORE NOISE
+
+    xSum += x * I;
+    ySum += y * I;
+    weightSum += I;
+  }
+}
+
+// Fallback if threshold too aggressive
+if (weightSum === 0) {
   for (let y = 0; y < imgHeight; y++) {
     for (let x = 0; x < imgWidth; x++) {
       const I = intensity[y * imgWidth + x];
-      xSum += x * I; ySum += y * I;
+      xSum += x * I;
+      ySum += y * I;
+      weightSum += I;
     }
   }
-  cx = xSum / total;
-  cy = ySum / total;
+}
+
+cx = xSum / weightSum;
+cy = ySum / weightSum;
 
   // Radial sort for encircled energy
   const radial = new Array(N);
