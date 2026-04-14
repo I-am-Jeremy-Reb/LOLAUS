@@ -1220,22 +1220,5 @@ function showResult(id, html, isError) {
   if (isError) el.style.borderLeftColor = 'var(--danger)';
   else el.style.borderLeftColor = 'var(--accent)';
 }
-</script>
-<p>
-The centroid is computed using a thresholded intensity weighting to suppress noise contributions.
-The reported \( r_{80} \) is the radius enclosing 80% of total beam energy.
-Assuming a Gaussian profile, the \( 1/e^2 \) radius is estimated via:
-</p>
-
-<div class="eq-block">
-\[
-w \approx \frac{r_{80}}{0.64}
-\]
-</div>
-
-<p>
-This approximation is valid for near-Gaussian beams. For strongly aberrated beams,
-a second-moment (ISO) definition is recommended.
-</p>
 </body>
 </html>
