@@ -706,9 +706,9 @@ function buildIntensity() {
   // The noise floor is the most-frequently-occurring value in the
   // range [1, ~10% of max]. Camera readout noise typically lands at
   // a single value (commonly 1) which dominates the histogram.
-  // We find the peak of hist[1..ceil(0.1*dataMax)] and use that as
+  // We find the peak of hist[1..ceil(0.15*dataMax)] and use that as
   // the floor to subtract before all calculations.
-  const floorSearchMax = Math.max(2, Math.ceil(dataMax * 0.10));
+  const floorSearchMax = Math.max(2, Math.ceil(dataMax * 0.15));
   let noisePeak = 0, noisePeakCount = 0;
   for (let v = 1; v <= floorSearchMax; v++) {
     if (hist[v] > noisePeakCount) { noisePeakCount = hist[v]; noisePeak = v; }
