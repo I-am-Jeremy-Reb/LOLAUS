@@ -557,8 +557,8 @@ function decodeTIFF(arrayBuffer) {
 
       <div class="btn-group">
         <button class="btn btn-secondary" onclick="showImage()">Show Image</button>
-        <button class="btn btn-primary" onclick="calculateEE()">Calculate r₈₀</button>
-        <button class="btn btn-secondary" onclick="plotCircle()">Draw 80% Circle</button>
+        <button class="btn btn-primary" onclick="calculateEE()">Calculate 1/e^2 radius </button>
+        <button class="btn btn-secondary" onclick="plotCircle()">Draw 86.5% Circle</button>
         <button class="btn btn-secondary" onclick="plotDiffractionLimit()">Draw Diffraction Limit</button>
       </div>
 
@@ -918,7 +918,9 @@ cy = ySum / weightSum;
   }
   radial.sort((a, b) => a.r - b.r);
 
-  const target = 0.8 * total;
+  const target = 0.865 * total; // Changing Target to 86.5 = e^2 diameter 
+  // r80 is actually 86.5 = 1/e^2 diameter
+  
   let cumulative = 0;
   r80 = 0;
   for (let i = 0; i < radial.length; i++) {
