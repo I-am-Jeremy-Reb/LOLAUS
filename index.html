@@ -969,10 +969,37 @@ function plotDiffractionLimit() {
 
   const rdl_px = rdl / um;
   const r80_um = r80 * um;
-  // Strehl: (DL_radius / measured_radius)^2 — ratio of areas
-  const strehl = (rdl / r80_um) ** 2;
+  // 
+  // assume S =1 if r80 = rdl 
+  // total = total energy in image 
+  //target = energy in 86.5
+  // S should be radius_Energy_diffraction_limit/radius_e^2_energy
+  //const strehl = (rdl / r80_um) ** 2;
 
+  //
+  // Find peak intensity
+  let Ipeak = 0;
+  for (let i = 0; i < intensity.length; i++) {
+    if (intensity[i] > Ipeak) Ipeak = intensity[i];}
+  
+  // Estimate diffraction-limited peak
+  // Assume same total energy and ideal Gaussian
+  const totalEnergy = intensity.reduce((a,b) => a+b, 0);
+  
+  // DL waist in pixels
+  const w_dl_px = (rdl / um);  
+  
+  // Ideal Gaussian peak:
+  // I0 = 2E / (π w^2)
+  const Ipeak_DL = 2 * totalEnergy / (Math.PI * w_dl_px * w_dl_px);
+  
+  // Strehl
+  const strehl = Ipeak / Ipeak_DL;
+  //
+  //
+  
   // Show Strehl in a dedicated result box
+  
   let shtml = `<div class="result-label">Diffraction Limit & Strehl Ratio</div>`;
   shtml += `DL radius = ${rdl.toFixed(2)} µm (${rdl_px.toFixed(1)} px)`;
   shtml += `&nbsp;&nbsp;|&nbsp;&nbsp;r₈₀ = ${r80_um.toFixed(2)} µm`;
