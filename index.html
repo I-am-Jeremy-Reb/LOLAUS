@@ -511,7 +511,7 @@ function decodeTIFF(arrayBuffer) {
       <div class="feature-grid">
         <div class="feature-item">
           <div class="f-label">Spot Calculation</div>
-          <div class="f-desc">Upload a TIFF beam image and compute the 80% encircled energy radius. Optionally provide a µm/pixel scale to get physical units.</div>
+          <div class="f-desc">Upload a TIFF beam image and compute the 86.5% encircled energy radius. Optionally provide a µm/pixel scale to get physical units.</div>
         </div>
         <div class="feature-item">
           <div class="f-label">Gaussian Beam</div>
@@ -533,13 +533,13 @@ function decodeTIFF(arrayBuffer) {
   <!-- ═══ SPOT CALCULATION ═══ -->
   <div id="spot" class="tab">
     <div class="card">
-      <h2>Spot Calculation — 80% Encircled Energy</h2>
+      <h2>Spot Calculation — 86.5% Encircled Energy</h2>
 
       <div class="eq-block">
-        \( E(r) = \displaystyle\int_0^r I(r')\, 2\pi r'\, dr' \quad\Rightarrow\quad r_{80} : E(r_{80}) = 0.8\, E_\text{total} \)
+        \( E(r) = \displaystyle\int_0^r I(r')\, 2\pi r'\, dr' \quad\Rightarrow\quad r_{86.5} : E(r_{86.5}) = 0.865\, E_\text{total} \)
       </div>
 
-      <p>Upload a TIFF beam profile image. The algorithm computes the intensity centroid, then finds the radius containing 80% of the total encircled energy.</p>
+      <p>Upload a TIFF beam profile image. The algorithm computes the intensity centroid, then finds the radius containing 86.5% of the total encircled energy.</p>
 
       <input type="file" id="upload" accept=".tif,.tiff">
       <div id="fileStatus">No file loaded.</div>
@@ -877,7 +877,7 @@ for (let i = 0; i < N; i++) {
 }
 
 // Threshold (adjustable!)
-const threshold = 0.10 * Imax;  // 5% of peak — very robust
+const threshold = 0.10 * Imax;  // 10% of peak — very robust
 
 let xSum = 0, ySum = 0, weightSum = 0;
 
@@ -928,7 +928,7 @@ cy = ySum / weightSum;
     if (cumulative >= target) { r80 = radial[i].r; break; }
   }
 
-  let html = `<div class="result-label">80% Encircled Energy Radius</div>`;
+  let html = `<div class="result-label">86.5% Encircled Energy Radius</div>`;
   html += `r₈₀ = ${r80.toFixed(2)} px`;
 
   const um  = parseFloat(document.getElementById('um_per_pixel').value);
