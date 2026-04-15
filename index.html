@@ -309,11 +309,11 @@ function encodeTIFF16(intensity, width, height) {
   <div class="card">
     <h2>Peak Intensity &amp; Normalised Vector Potential a₀</h2>
     <div class="eq-block">
-      \( I_0 = \dfrac{2\ln2}{\pi}\cdot\dfrac{E}{\tau\,\pi\,r_{86.5}^2} \qquad a_0 = \sqrt{\dfrac{I_0\,\lambda_{\mu\text{m}}^2}{1.37\times10^{18}}} \)
+      \( I_0 = \dfrac{E}{\tau\,\pi\,r_{86.5}^2} \qquad a_0 = \sqrt{\dfrac{I_0\,\lambda_{\mu\text{m}}^2}{1.37\times10^{18}}} \)
     </div>
     <p>
       Peak intensity \(I_0\) [W/cm²] for a spatially and temporally Gaussian pulse of energy \(E\) [J], FWHM duration τ [fs], and 1/e² radius \(r_{86.5}\) [Microns].
-      The factor \(2\ln 2/\pi\approx0.441\) arises from integrating a Gaussian in time; dividing by \(\pi r^2\) gives the peak of the spatial Gaussian.
+      
       \(a_0\) uses λ in Microns; the constant 1.37×10¹⁸ W/cm²/Microns² is the relativistic intensity threshold for λ = 1 Microns.
     </p>
     <div class="input-row">
@@ -678,8 +678,10 @@ function exportCSV(){
 }
 
 // ════════ INTENSITY / a0 ════════
+//const LN2=Math.log(2);  ignore for now? 
+//const I0_FACTOR=(2*LN2)/Math.PI; // ≈ 0.4413
 const LN2=Math.log(2);
-const I0_FACTOR=(2*LN2)/Math.PI; // ≈ 0.4413
+const I0_FACTOR=1; // ≈ 0.4413
 
 function peakI(E_J,tau_s,r_cm){ return I0_FACTOR*E_J/(tau_s*Math.PI*r_cm*r_cm); }
 function a0fromI(I,lam_um){ return Math.sqrt(I*lam_um*lam_um/1.37e18); }
