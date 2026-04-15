@@ -711,13 +711,7 @@ function calcIntensityPlots(){
   }
 
   // Plot 2: vs Radius  (need E)
-  if(isNaN(E_in)||E_in<=0){
-    document.getElementById('titleIvsR').textContent='⚠  Enter Energy (J) to generate this plot';
-    document.getElementById('canvasIvsR').style.display='none';
-  } else {
-    drawIvsR(tau_s,E_in,lam_um,isNaN(r_in)?null:r_in);
-    plotted=true;
-  }
+  //removing this plot
 
   // Summary
   if(!isNaN(r_in)&&r_in>0&&!isNaN(E_in)&&E_in>0){
