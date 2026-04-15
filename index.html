@@ -574,16 +574,17 @@ function plotCircle(){
   if(r865===0){alert('Run Calculate 86.5% EE Radius first.');return;}
   showBothPlots(true);
 }
+// adjusting overlay (not showing DL agagin)
 function plotDiffractionLimit(){
   const um=parseFloat(document.getElementById('um_per_pixel').value);
   const rdl=parseFloat(document.getElementById('r_dl').value);
   if(isNaN(um)||um<=0||isNaN(rdl)||rdl<=0){alert('Please enter both µm/pixel and DL radius (µm).');return;}
   if(!intensityData){alert('Please run Calculate 86.5% EE Radius first.');return;}
   const rdl_px=rdl/um,r865_um=r865*um,strehl=(rdl/r865_um)**2;
-  let shtml=`<div class="result-label">Diffraction Limit & Strehl Ratio</div>`;
-  shtml+=`DL = ${rdl.toFixed(2)} µm (${rdl_px.toFixed(1)} px)&nbsp;|&nbsp;r₈₆.₅ = ${r865_um.toFixed(2)} µm&nbsp;|&nbsp;<strong>Strehl ≈ ${strehl.toFixed(3)}</strong>`;
-  if(strehl>1) shtml+=` <span style="color:#ffc800">(> 1: tighter than DL estimate)</span>`;
-  showResult('dlResult',shtml);
+  //let shtml=`<div class="result-label">Diffraction Limit & Strehl Ratio</div>`;
+  //shtml+=`DL = ${rdl.toFixed(2)} µm (${rdl_px.toFixed(1)} px)&nbsp;|&nbsp;r₈₆.₅ = ${r865_um.toFixed(2)} µm&nbsp;|&nbsp;<strong>Strehl ≈ ${strehl.toFixed(3)}</strong>`;
+  //if(strehl>1) shtml+=` <span style="color:#ffc800">(> 1: tighter than DL estimate)</span>`;
+  //showResult('dlResult',shtml);
   showBothPlots(r865>0);
   [document.getElementById('spotCanvas'),document.getElementById('spotCanvasLog')].forEach(canvas=>{
     const ctx=canvas.getContext('2d'),lw=Math.max(1,imgWidth/600);
