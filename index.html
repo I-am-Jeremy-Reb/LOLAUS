@@ -239,7 +239,16 @@ function encodeTIFF16(intensity, width, height) {
         <div class="canvas-wrap visible" style="margin-top:4px;"><canvas id="spotCanvasLog"></canvas></div>
       </div>
     </div>
+    
+    <!-- Ellipticity chips -->
+    <div id="ellipRow" class="ellip-row">
+      <div class="ellip-chip"><span class="el">Ellipticity ε</span><span id="ellipValue">—</span></div>
+      <div class="ellip-chip"><span class="el">Semi-axes (px)</span><span id="ellipAxes">—</span></div>
+      <div class="ellip-chip"><span class="el">Major-axis angle</span><span id="ellipAngle">—</span></div>
+      <div class="ellip-chip" id="ellipNote" style="border-color:var(--muted);"></div>
+    </div>
 
+    
     <!-- Measurement Log -->
     <div id="resultsTableWrap" style="margin-top:24px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
@@ -261,13 +270,7 @@ function encodeTIFF16(intensity, width, height) {
       </div>
     </div>
 
-    <!-- Ellipticity chips -->
-    <div id="ellipRow" class="ellip-row">
-      <div class="ellip-chip"><span class="el">Ellipticity ε</span><span id="ellipValue">—</span></div>
-      <div class="ellip-chip"><span class="el">Semi-axes (px)</span><span id="ellipAxes">—</span></div>
-      <div class="ellip-chip"><span class="el">Major-axis angle</span><span id="ellipAngle">—</span></div>
-      <div class="ellip-chip" id="ellipNote" style="border-color:var(--muted);"></div>
-    </div>
+
 
     
     <!-- Accordions -->
