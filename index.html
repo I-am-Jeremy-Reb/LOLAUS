@@ -638,9 +638,6 @@ function decodeTIFF(arrayBuffer) {
           <p>
             Before the centroid is computed, the code also <strong>subtracts the noise floor</strong> (the most-common low-level pixel value, typically the camera's electronic offset / bias) and <strong>replaces saturated ("burnt") pixels</strong> with the median of their 5×5 neighbourhood, so that sensor clipping does not bias the result.
           </p>
-          <p>
-            The centroid is sub-pixel accurate: because it is a weighted average rather than a peak-search, it can resolve fractional-pixel shifts as long as the beam is well-sampled.
-          </p>
         </div>
       </div>
 
@@ -660,13 +657,13 @@ function decodeTIFF(arrayBuffer) {
             \( S \approx \left( \dfrac{r_{\text{DL}}}{r_{86.5}} \right)^{\!2} \)
           </div>
           <p>
-            Here, <strong>\(r_{\text{DL}}\)</strong> is the theoretical diffraction-limited 86.5% EE radius you provide (computed from first-principles optics or a separate simulation), and <strong>\(r_{86.5}\)</strong> is the measured radius from the camera image.
+            Here, <strong>\(r_{\text{DL}}\)</strong> is the theoretical diffraction-limited 86.5% EE radius you provide, and <strong>\(r_{86.5}\)</strong> is the measured radius from the camera image.
           </p>
           <p>
             The physical reasoning: for a perfect Gaussian, the 86.5% EE radius equals the 1/e² waist \(w_0\). If aberrations broaden the beam, \(r_{86.5} > r_{\text{DL}}\), and the on-axis peak intensity — and hence the Strehl ratio — drops as the square of the ratio. This is consistent with the relationship between peak intensity and beam area (\(I_{\text{peak}} \propto 1/r^2\) for a fixed total energy).
           </p>
           <p>
-            <strong>Note:</strong> This approximation is most accurate when the beam is nearly Gaussian and aberrations are mild (\(S \gtrsim 0.3\)). For highly aberrated beams, a full Fourier-optics wavefront analysis gives a more rigorous result. Values slightly above 1.0 can occur when pointing jitter or a non-Gaussian DL estimate is used — treat them as \(S \approx 1\).
+            <strong>Note:</strong> This approximation is most accurate when the beam is nearly Gaussian and aberrations are mild (\(S \gtrsim 0.3\)). For highly aberrated beams, a full Fourier-optics wavefront analysis gives a more rigorous result.
           </p>
         </div>
       </div>
