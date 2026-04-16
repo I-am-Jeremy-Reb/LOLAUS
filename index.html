@@ -8,7 +8,7 @@
 <script>
 //University of Michigan Center for Gerard Mourou Ultrafast Optical Sciences
 //Jeremy M Rebenstock Jrebenst@umich.edu
-//Updated 4/15/2026
+//Updated 4/16/2026
 //
 // ═══════════════════════════════════════════════════════════════
 // TIFF DECODER  —  self-contained, zero external dependencies
@@ -285,8 +285,8 @@ function encodeTIFF16(intensity, width, height) {
     <div class="explain-block">
       <div class="explain-header" onclick="toggleExplain('strehlExp',this)">▸ How the Strehl ratio is calculated<span class="arrow" style="transition:transform .2s;font-size:9px;">▼</span></div>
       <div class="explain-body" id="strehlExp">
-        <p>The <strong>Strehl ratio</strong> S is the ratio of the intensity between an abberated and idealized focal spot. S = \(\frac{I_{measured}}{I_{Diffraction Limited}}) (S = 1 is the maximum) ; S ≥ 0.8 is the Maréchal criterion, and is widely accepted as a  </p>
-        <div class="math-line">\(S\approx\!\left(\dfrac{r_\text{DL}}{r_{86.5}}\right)^{\!2}\)</div>
+        <p>The <strong>Strehl ratio</strong> S is the ratio of the intensity between an abberated and idealized focal spot. S = I_measured/I_Diffraction-Limited.  S = 1 is the maximum corrseponding to a perfectly focused diffraction limited spot.   </p>
+       <div class="eq-block">\[S = \frac{I_{\text{measured}}}{I_{\text{DL}}}= \frac{P/A_{\text{measured}}}{P/A_{\text{DL}}}= \frac{P}{\pi r_m^2} \Big/ \frac{P}{\pi r_{\text{DL}}^2}= \left(\frac{r_{\text{DL}}}{r_m}\right)^2\]</div>
         <p>r<sub>DL</sub> is the theoretical diffraction-limited 86.5% EE radius you supply; r₈₆.₅ is the measured radius. For a fixed total energy, peak intensity scales as 1/r², so the ratio of peak intensities equals the inverse square of the radii. This approximation is most accurate for nearly-Gaussian beams with mild aberrations (S ≳ 0.3).</p>
       </div>
     </div>
