@@ -286,7 +286,7 @@ function encodeTIFF16(intensity, width, height) {
       <div class="explain-header" onclick="toggleExplain('strehlExp',this)">▸ How the Strehl ratio is calculated<span class="arrow" style="transition:transform .2s;font-size:9px;">▼</span></div>
       <div class="explain-body" id="strehlExp">
         <p>The <strong>Strehl ratio</strong> S is the ratio of the intensity between an abberated and idealized focal spot. S = I_measured/I_Diffraction-Limited.  S = 1 is the maximum corrseponding to a perfectly focused diffraction limited spot.   </p>
-       <div class="eq-block">\[S = \frac{I_{\text{measured}}}{I_{\text{DL}}}= \frac{P/A_{\text{measured}}}{P/A_{\text{DL}}}= \frac{P}{\pi r₈₆.₅^2} \Big/ \frac{P}{\pi r_{\text{DL}}^2}= \left(\frac{r_{\text{DL}}}{r_m}\right)^2\]</div>
+       <div class="eq-block">\[S = \frac{I_{\text{measured}}}{I_{\text{DL}}}= \frac{P/A_{\text{measured}}}{P/A_{\text{DL}}}= \frac{P}{\pi r₈₆.₅^2} \Big/ \frac{P}{\pi r_{\text{DL}}^2}= \left(\frac{r_{\text{DL}}}{r₈₆.₅}\right)^2\]</div>
         <p>r<sub>DL</sub> is the theoretical diffraction-limited radius, r₈₆.₅ is the radius of the calculated 86.5% EE spot. P is the power of the system and A is the area. So we see for a fixed power, the Strehl ratio can be given by the square of the of the diffraction limited spot over the measured spot radius. We note this treatment of the focal spot is most accurate for nearly-Gaussian beams with mild aberrations.</p>
       </div>
     </div>
