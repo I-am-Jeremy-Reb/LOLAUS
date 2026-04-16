@@ -169,7 +169,7 @@ function encodeTIFF16(intensity, width, height) {
 </head>
 <body>
 <header>
-  <div class="logo"> Intuitive Online Laser Analysis for Users of petawatt Systems <span>// LOLAUS</span></div>
+  <div class="logo"> Intuitive Online Laser Analysis for Users of petawatt Systems <span>// IOLAUS</span></div>
   <nav>
     <button class="active" onclick="showTab('home',this)">Home</button>
     <button onclick="showTab('spot',this)">Spot Calc</button>
@@ -673,7 +673,7 @@ function exportCSV(){
   });
   const blob=new Blob([lines.join('\n')],{type:'text/csv'});
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob); a.download='lolaus_measurement_log.csv';
+  a.href=URL.createObjectURL(blob); a.download='IOLAUS_measurement_log.csv';
   a.click(); URL.revokeObjectURL(a.href);
 }
 
