@@ -285,7 +285,7 @@ function encodeTIFF16(intensity, width, height) {
     <div class="explain-block">
       <div class="explain-header" onclick="toggleExplain('strehlExp',this)">▸ How the Strehl ratio is calculated<span class="arrow" style="transition:transform .2s;font-size:9px;">▼</span></div>
       <div class="explain-body" id="strehlExp">
-        <p>The <strong>Strehl ratio</strong> S is the ratio of the intensity between an abberated and idealized focal spot. S = \frac{I_{measured}}{I_{Diffraction Limited}}  S = 1 is the maximum ; S ≥ 0.8 is the Maréchal criterion.</p>
+        <p>The <strong>Strehl ratio</strong> S is the ratio of the intensity between an abberated and idealized focal spot. S = \(\frac{I_{measured}}{I_{Diffraction Limited}}) (S = 1 is the maximum) ; S ≥ 0.8 is the Maréchal criterion, and is widely accepted as a  </p>
         <div class="math-line">\(S\approx\!\left(\dfrac{r_\text{DL}}{r_{86.5}}\right)^{\!2}\)</div>
         <p>r<sub>DL</sub> is the theoretical diffraction-limited 86.5% EE radius you supply; r₈₆.₅ is the measured radius. For a fixed total energy, peak intensity scales as 1/r², so the ratio of peak intensities equals the inverse square of the radii. This approximation is most accurate for nearly-Gaussian beams with mild aberrations (S ≳ 0.3).</p>
       </div>
