@@ -323,7 +323,7 @@ function encodeTIFF16(intensity, width, height) {
       <div class="explain-body" id="centroidExp">
         <p>The <strong>intensity-weighted centroid</strong> locates the beam's centre of mass:</p>
         <div class="math-line">\(\bar{x}=\dfrac{\sum x\,I(x,y)}{\sum I},\qquad\bar{y}=\dfrac{\sum y\,I(x,y)}{\sum I}\)</div>
-        <p>Only pixels above 10% of the peak contribute, preventing read-out noise from biasing the result. The camera noise floor (histogram peak in the low-level range) is subtracted beforehand, and saturated pixels are replaced by the 5×5 neighbourhood median. The centroid is sub-pixel accurate.</p>
+        <p>Only pixels above 10% of the peak contribute, preventing read-out noise from biasing the result. The camera noise floor (histogram peak in the low-level range) is subtracted beforehand. Saturated pixels are replaced by the 5×5 neighbourhood median.</p>
       </div>
     </div>
     <div class="explain-block">
