@@ -306,10 +306,10 @@ function encodeTIFF16(intensity, width, height) {
       <div style="overflow-x:auto;">
         <table id="resultsTable">
           <thead>
-            <tr><th>File</th><th>Centroid (px)</th><th>Microns/px</th><th>r₈₆.₅ (px)</th><th>r₈₆.₅ (Microns)</th><th>Ellipticity ε</th><th>Angle °</th><th>DL (Microns)</th><th>Strehl</th></tr>
+            <tr><th>File</th><th>Centroid (px)</th><th>Microns/px</th><th>r₈₆.₅ (px)</th><th>r₈₆.₅ (Microns)</th><th>Ellipticity ε</th><th>Angle °</th><th>DL (Microns)</th><th>Strehl</th><th>EE in DL (%)</th></tr>
           </thead>
           <tbody id="resultsBody">
-            <tr id="emptyRow"><td colspan="9" style="text-align:center;color:var(--muted);font-style:italic;padding:14px 9px;font-size:11px;">No measurements yet — load a TIFF and click <strong style="color:var(--text);">Calculate 86.5% EE Radius</strong></td></tr>
+            <tr id="emptyRow"><td colspan="10" style="text-align:center;color:var(--muted);font-style:italic;padding:14px 9px;font-size:11px;">No measurements yet — load a TIFF and click <strong style="color:var(--text);">Calculate 86.5% EE Radius</strong></td></tr>
           </tbody>
         </table>
       </div>
@@ -575,9 +575,12 @@ async function runBatchAnalysis(){
       let r865_um=null,strehlVal=null;
       if(!isNaN(um)&&um>0){r865_um=fr865*um;if(!isNaN(rdl)&&rdl>0) strehlVal=(rdl/r865_um)**2;}
 
+      const brdl_px = (!isNaN(um)&&um>0&&!isNaN(rdl)&&rdl>0) ? rdl/um : null;
+      const beeDLpct = computeEEinDL(cleaned, width, height, fcx, fcy, brdl_px);
       addTableRow(fname,fcx,fcy,(!isNaN(um)&&um>0)?um:null,fr865,r865_um,
         fEps,fTheta,
-        (!isNaN(rdl)&&rdl>0&&r865_um!==null)?rdl:null,strehlVal);
+        (!isNaN(rdl)&&rdl>0&&r865_um!==null)?rdl:null,strehlVal,beeDLpct);
+      
 
     }catch(err){
       errors.push(`${file.name}: ${err.message}`);
@@ -662,6 +665,22 @@ function computeEllipticity(intensity){
   document.getElementById('ellipNote').textContent=note;
   document.getElementById('ellipNote').style.color=eps>=0.87?'var(--accent)':eps>=0.70?'#ffc800':'var(--danger)';
   return {eps,wMaj,wMin,theta};
+}
+
+// ════════ % ENERGY WITHIN DL SPOT ════════
+function computeEEinDL(intensity, width, height, centX, centY, rdl_px) {
+  if (!rdl_px || rdl_px <= 0) return null;
+  const r2 = rdl_px * rdl_px;
+  let sumIn = 0, sumTotal = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const I = intensity[y * width + x];
+      sumTotal += I;
+      const dx = x - centX, dy = y - centY;
+      if (dx * dx + dy * dy <= r2) sumIn += I;
+    }
+  }
+  return sumTotal > 0 ? (sumIn / sumTotal) * 100 : null;
 }
 
 // ════════ RENDER ════════
@@ -756,9 +775,11 @@ function calculateEE(){
   html+=`</span>`;
   showResult('eeResult',html);
 
-  addTableRow(currentFileName,cx,cy,(!isNaN(um)&&um>0)?um:null,r865,r865_um,
+  const rdl_px = (!isNaN(um)&&um>0&&!isNaN(rdl)&&rdl>0) ? rdl/um : null;
+  const eeDLpct = computeEEinDL(intensity, imgWidth, imgHeight, cx, cy, rdl_px);
+  addTableRow(currentFileName,cx,cy,(!isNaN(um)&&um>0)?um:null,r865,r865um,
     ellip?ellip.eps:null,ellip?ellip.theta:null,
-    (!isNaN(rdl)&&rdl>0&&r865_um!==null)?rdl:null,strehlVal);
+    (!isNaN(rdl)&&rdl>0&&r865um!==null)?rdl:null,strehlVal,eeDLpct);
   showBothPlots(false);
 }
 
@@ -818,9 +839,9 @@ function exportPlotTIFF(canvasId,name){
 }
 
 // ════════ CSV EXPORT ════════
-function addTableRow(fname,centX,centY,umPerPx,r865px,r865um,eps,theta,dlUm,strehl){
+function addTableRow(fname,centX,centY,umPerPx,r865px,r865um,eps,theta,dlUm,strehl,eeDLpct){
   const emptyRow=document.getElementById('emptyRow'); if(emptyRow) emptyRow.remove();
-  tableRows.push({fname,centX,centY,umPerPx,r865px,r865um,eps,theta,dlUm,strehl});
+  tableRows.push({fname,centX,centY,umPerPx,r865px,r865um,eps,theta,dlUm,strehl,eeDLpct});
   const tbody=document.getElementById('resultsBody');
   const tr=document.createElement('tr');
   let epsHTML='<span style="color:var(--muted)">—</span>';
@@ -839,16 +860,17 @@ function addTableRow(fname,centX,centY,umPerPx,r865px,r865um,eps,theta,dlUm,stre
     <td>${epsHTML}</td>
     <td class="muted">${theta!==null?theta.toFixed(1)+'°':'—'}</td>
     <td class="muted">${dlUm!==null?dlUm.toFixed(2):'—'}</td>
-    <td class="${strehlClass}">${strehlStr}</td>`;
+    <td class="${strehlClass}">${strehlStr}</td>
+    <td class="muted">${eeDLpct!==null?eeDLpct.toFixed(1)+'%':'—'}</td>`;
   tbody.appendChild(tr);
 }
 function clearTable(){
   tableRows=[];
-  document.getElementById('resultsBody').innerHTML=`<tr id="emptyRow"><td colspan="9" style="text-align:center;color:var(--muted);font-style:italic;padding:14px 9px;font-size:11px;">No measurements yet — load a TIFF and click <strong style="color:var(--text);">Calculate 86.5% EE Radius</strong></td></tr>`;
+  document.getElementById('resultsBody').innerHTML=`<tr id="emptyRow"><td colspan="10" style="text-align:center;color:var(--muted);font-style:italic;padding:14px 9px;font-size:11px;">No measurements yet — load a TIFF and click <strong style="color:var(--text);">Calculate 86.5% EE Radius</strong></td></tr>`;
 }
 function exportCSV(){
   if(tableRows.length===0){alert('No measurements to export yet.');return;}
-  const hdr=['File','Centroid_X_px','Centroid_Y_px','um_per_px','r865_px','r865_um','Ellipticity','Angle_deg','DL_um','Strehl'];
+  const hdr=['File','Centroid_X_px','Centroid_Y_px','um_per_px','r865_px','r865_um','Ellipticity','Angle_deg','DL_um','Strehl','EE_in_DL_pct'];
   const lines=[hdr.join(',')];
   tableRows.forEach(r=>{
     lines.push([
@@ -861,6 +883,7 @@ function exportCSV(){
       r.theta!==null?r.theta.toFixed(2):'',
       r.dlUm!==null?r.dlUm.toFixed(3):'',
       r.strehl!==null?r.strehl.toFixed(4):''
+      r.eeDLpct!==null?r.eeDLpct.toFixed(2):''
     ].join(','));
   });
   const blob=new Blob([lines.join('\n')],{type:'text/csv'});
