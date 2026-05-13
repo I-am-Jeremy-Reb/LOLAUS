@@ -200,7 +200,7 @@ function encodeTIFF16(intensity, width, height) {
     <div class="hero-title">Laser <span>Optics</span> Toolkit</div>
     <div class="hero-sub">Diagnostics and beam analysis for laser plasma physics — all processing runs locally in your browser</div>
     <div class="feature-grid">
-      <div class="feature-item"><div class="f-label">Spot Calculation</div><div class="f-desc">86.5% EE radius (1/e²), intensity centroid, beam ellipticity, Strehl ratio. Single file or batch folder. Export images as 16-bit TIFF.</div></div>
+      <div class="feature-item"><div class="f-label">Spot Calculation</div><div class="f-desc">86.5% EE radius (1/e²), intensity centroid, beam ellipticity, Strehl ratio, and % energy in DL spot. Single file or batch folder. Export images as 16-bit TIFF.</div></div>
       <div class="feature-item"><div class="f-label">Intensity / a₀</div><div class="f-desc">Peak intensity and normalised vector potential a₀ vs energy and spot size, with log–log plots and vertical markers.</div></div>
       <div class="feature-item"><div class="f-label">Gaussian Beam</div><div class="f-desc">Compute w(z) from focus given w₀ and λ. Full Rayleigh-range beam envelope plot.</div></div>
       <div class="feature-item"><div class="f-label">Export</div><div class="f-desc">Export beam images as 16-bit TIFF and measurement log as CSV directly from the browser.</div></div>
@@ -218,11 +218,11 @@ function encodeTIFF16(intensity, width, height) {
 <!-- ══════════════ SPOT CALC ══════════════ -->
 <div id="spot" class="tab">
   <div class="card">
-    <h2>Spot Calculation — 86.5% EE Radius · Ellipticity · Strehl</h2>
+    <h2>Spot Calculation — 86.5% EE Radius · Ellipticity · Strehl · EE in DL Spot</h2>
     <div class="eq-block">
       \( E(r)=\displaystyle\int_0^r I(r')\,2\pi r'\,dr' \;\Rightarrow\; r_{86.5}: E(r_{86.5})=0.865\,E_\text{total} \)
     </div>
-    <p>Upload a TIFF beam profile, or select a folder to batch-process all TIFFs inside it. Computes the intensity centroid, 86.5% EE radius, beam ellipticity, and Strehl ratio.</p>
+    <p>Upload a TIFF beam profile, or select a folder to batch-process all TIFFs inside it. Computes the intensity centroid, 86.5% EE radius, beam ellipticity, Strehl ratio, and percentage of total beam energy enclosed within the diffraction-limited spot radius.</p>
 
     <!-- Source mode toggle -->
     <div class="source-toggle">
@@ -293,7 +293,6 @@ function encodeTIFF16(intensity, width, height) {
       <div class="ellip-chip" id="ellipNote" style="border-color:var(--muted);"></div>
     </div>
 
-    
     <!-- Measurement Log -->
     <div id="resultsTableWrap" style="margin-top:24px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
@@ -306,18 +305,26 @@ function encodeTIFF16(intensity, width, height) {
       <div style="overflow-x:auto;">
         <table id="resultsTable">
           <thead>
-            <tr><th>File</th><th>Centroid (px)</th><th>Microns/px</th><th>r₈₆.₅ (px)</th><th>r₈₆.₅ (Microns)</th><th>Ellipticity ε</th><th>Angle °</th><th>DL (Microns)</th><th>Strehl</th></tr>
+            <tr>
+              <th>File</th>
+              <th>Centroid (px)</th>
+              <th>Microns/px</th>
+              <th>r₈₆.₅ (px)</th>
+              <th>r₈₆.₅ (Microns)</th>
+              <th>Ellipticity ε</th>
+              <th>Angle °</th>
+              <th>DL (Microns)</th>
+              <th>Strehl</th>
+              <th>EE in DL (%)</th>
+            </tr>
           </thead>
           <tbody id="resultsBody">
-            <tr id="emptyRow"><td colspan="9" style="text-align:center;color:var(--muted);font-style:italic;padding:14px 9px;font-size:11px;">No measurements yet — load a TIFF and click <strong style="color:var(--text);">Calculate 86.5% EE Radius</strong></td></tr>
+            <tr id="emptyRow"><td colspan="10" style="text-align:center;color:var(--muted);font-style:italic;padding:14px 9px;font-size:11px;">No measurements yet — load a TIFF and click <strong style="color:var(--text);">Calculate 86.5% EE Radius</strong></td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-
-
-    
     <!-- Accordions -->
     <div class="explain-block">
       <div class="explain-header" onclick="toggleExplain('centroidExp',this)">▸ How the centroid is calculated<span class="arrow" style="transition:transform .2s;font-size:9px;">▼</span></div>
@@ -335,7 +342,6 @@ function encodeTIFF16(intensity, width, height) {
         <p>r<sub>DL</sub> is the theoretical diffraction-limited radius, r₈₆.₅ is the radius of the calculated 86.5% EE spot. P is the power of the system and A is the area. So we see for a fixed power, the Strehl ratio can be given by the square of the of the diffraction limited spot over the measured spot radius. We note this treatment of the focal spot is most accurate for nearly-Gaussian beams with mild aberrations.</p>
       </div>
     </div>
-    
     <div class="explain-block">
       <div class="explain-header" onclick="toggleExplain('ellipExp',this)">▸ How ellipticity is calculated<span class="arrow" style="transition:transform .2s;font-size:9px;">▼</span></div>
       <div class="explain-body" id="ellipExp">
@@ -345,7 +351,15 @@ function encodeTIFF16(intensity, width, height) {
         <p>The yellow dashed ellipse overlaid on the image represents the 1/e² principal-axis ellipse derived from the second moments.</p>
       </div>
     </div>
-    
+    <div class="explain-block">
+      <div class="explain-header" onclick="toggleExplain('eeDLExp',this)">▸ How % energy in DL spot is calculated<span class="arrow" style="transition:transform .2s;font-size:9px;">▼</span></div>
+      <div class="explain-body" id="eeDLExp">
+        <p>The <strong>% energy in DL spot</strong> is the fraction of total beam energy that falls within the diffraction-limited radius r<sub>DL</sub>:</p>
+        <div class="math-line">\(\text{EE}_\text{DL} = \dfrac{\displaystyle\sum_{(x,y):\,d(x,y)\leq r_\text{DL}} I(x,y)}{\displaystyle\sum_\text{all} I(x,y)} \times 100\%\)</div>
+        <p>where \(d(x,y) = \sqrt{(x-\bar x)^2+(y-\bar y)^2}\) is the distance from the intensity centroid. This requires both <strong>Microns/px</strong> and <strong>DL radius (Microns)</strong> to be entered. Unlike the Strehl ratio (an area proxy), this directly sums measured pixel counts inside the DL circle, giving a photometrically grounded measure of how much energy is concentrated in the diffraction-limited core.</p>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -430,8 +444,8 @@ let ellipEps=null,ellipW1=null,ellipW2=null,ellipTheta=null;
 let tableRows=[];
 
 // ════════ SOURCE MODE (file vs folder) ════════
-let sourceMode='file';   // 'file' | 'folder'
-let folderFiles=[];      // File objects from folder input
+let sourceMode='file';
+let folderFiles=[];
 
 function setSourceMode(mode){
   sourceMode=mode;
@@ -478,13 +492,30 @@ document.getElementById('uploadFolder').addEventListener('change',function(e){
   if(folderFiles.length===0){
     statusEl.innerHTML='<span style="color:var(--danger)">No .tif/.tiff files found in selected folder.</span>';
   } else {
-    // Sort alphabetically/numerically for consistent ordering
     folderFiles.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
     statusEl.innerHTML=`Folder loaded &nbsp;<span class="status-badge status-ok">${folderFiles.length} TIFF${folderFiles.length!==1?'s':''} found</span>`;
   }
   document.getElementById('batchProgress').style.display='none';
   document.getElementById('batchErrors').style.display='none';
 });
+
+// ════════ % ENERGY WITHIN DL SPOT ════════
+// Sums all cleaned pixel intensity within rdl_px of (centX, centY),
+// divided by the total image intensity sum. Returns % or null if inputs invalid.
+function computeEEinDL(intensity, width, height, centX, centY, rdl_px){
+  if(!rdl_px || rdl_px <= 0) return null;
+  const r2 = rdl_px * rdl_px;
+  let sumIn = 0, sumTotal = 0;
+  for(let y = 0; y < height; y++){
+    for(let x = 0; x < width; x++){
+      const I = intensity[y * width + x];
+      sumTotal += I;
+      const dx = x - centX, dy = y - centY;
+      if(dx*dx + dy*dy <= r2) sumIn += I;
+    }
+  }
+  return sumTotal > 0 ? (sumIn / sumTotal) * 100 : null;
+}
 
 // ════════ BATCH ANALYSIS ════════
 async function runBatchAnalysis(){
@@ -513,7 +544,6 @@ async function runBatchAnalysis(){
       const arrayBuffer=await readFileAsArrayBuffer(file);
       const {rgba,width,height}=decodeTIFF(arrayBuffer);
 
-      // Build intensity for this file
       const N=width*height;
       const raw=new Float64Array(N);
       const hist=new Uint32Array(256); let dataMax=0;
@@ -572,12 +602,19 @@ async function runBatchAnalysis(){
       }
 
       const fname=file.name.replace(/\.[^.]+$/,'');
-      let r865_um=null,strehlVal=null;
-      if(!isNaN(um)&&um>0){r865_um=fr865*um;if(!isNaN(rdl)&&rdl>0) strehlVal=(rdl/r865_um)**2;}
+      let r865_um=null,strehlVal=null,eeDLpct=null;
+      if(!isNaN(um)&&um>0){
+        r865_um=fr865*um;
+        if(!isNaN(rdl)&&rdl>0){
+          strehlVal=(rdl/r865_um)**2;
+          const brdl_px=rdl/um;
+          eeDLpct=computeEEinDL(cleaned,width,height,fcx,fcy,brdl_px);
+        }
+      }
 
       addTableRow(fname,fcx,fcy,(!isNaN(um)&&um>0)?um:null,fr865,r865_um,
         fEps,fTheta,
-        (!isNaN(rdl)&&rdl>0&&r865_um!==null)?rdl:null,strehlVal);
+        (!isNaN(rdl)&&rdl>0&&r865_um!==null)?rdl:null,strehlVal,eeDLpct);
 
     }catch(err){
       errors.push(`${file.name}: ${err.message}`);
@@ -586,7 +623,6 @@ async function runBatchAnalysis(){
     done++;
     fill.style.width=`${(done/folderFiles.length)*100}%`;
     progressText.textContent=`${done} / ${folderFiles.length} files processed`;
-    // Yield to browser to update UI
     await new Promise(r=>setTimeout(r,0));
   }
 
@@ -742,13 +778,22 @@ function calculateEE(){
   const ellip=computeEllipticity(intensity);
   const um=parseFloat(document.getElementById('um_per_pixel').value);
   const rdl=parseFloat(document.getElementById('r_dl').value);
-  let r865_um=null,strehlVal=null;
-  if(!isNaN(um)&&um>0){r865_um=r865*um;if(!isNaN(rdl)&&rdl>0) strehlVal=(rdl/r865_um)**2;}
+
+  let r865_um=null,strehlVal=null,eeDLpct=null;
+  if(!isNaN(um)&&um>0){
+    r865_um=r865*um;
+    if(!isNaN(rdl)&&rdl>0){
+      strehlVal=(rdl/r865_um)**2;
+      const rdl_px=rdl/um;
+      eeDLpct=computeEEinDL(intensity,imgWidth,imgHeight,cx,cy,rdl_px);
+    }
+  }
 
   let html=`<div class="result-label">86.5% Encircled Energy Radius (1/e² equivalent)</div>`;
   html+=`r₈₆.₅ = ${r865.toFixed(2)} px`;
   if(r865_um!==null) html+=`&nbsp;|&nbsp;${r865_um.toFixed(2)} Microns`;
   if(strehlVal!==null) html+=`&nbsp;|&nbsp;Strehl ≈ ${strehlVal.toFixed(3)}`;
+  if(eeDLpct!==null) html+=`&nbsp;|&nbsp;EE in DL = ${eeDLpct.toFixed(1)}%`;
   html+=`<br><span style="font-size:10px;color:var(--muted);margin-top:4px;display:block">centroid: (${cx.toFixed(1)}, ${cy.toFixed(1)}) px`;
   if(!isNaN(um)&&um>0) html+=`&nbsp;|&nbsp;scale: ${um} Microns/px`;
   if(noiseFloor>0) html+=`&nbsp;|&nbsp;noise floor ${noiseFloor} subtracted`;
@@ -758,7 +803,8 @@ function calculateEE(){
 
   addTableRow(currentFileName,cx,cy,(!isNaN(um)&&um>0)?um:null,r865,r865_um,
     ellip?ellip.eps:null,ellip?ellip.theta:null,
-    (!isNaN(rdl)&&rdl>0&&r865_um!==null)?rdl:null,strehlVal);
+    (!isNaN(rdl)&&rdl>0&&r865_um!==null)?rdl:null,strehlVal,eeDLpct);
+
   showBothPlots(false);
 }
 
@@ -817,19 +863,28 @@ function exportPlotTIFF(canvasId,name){
   a.click(); URL.revokeObjectURL(a.href);
 }
 
-// ════════ CSV EXPORT ════════
-function addTableRow(fname,centX,centY,umPerPx,r865px,r865um,eps,theta,dlUm,strehl){
+// ════════ TABLE ROWS & CSV ════════
+function addTableRow(fname,centX,centY,umPerPx,r865px,r865um,eps,theta,dlUm,strehl,eeDLpct){
   const emptyRow=document.getElementById('emptyRow'); if(emptyRow) emptyRow.remove();
-  tableRows.push({fname,centX,centY,umPerPx,r865px,r865um,eps,theta,dlUm,strehl});
+  tableRows.push({fname,centX,centY,umPerPx,r865px,r865um,eps,theta,dlUm,strehl,eeDLpct});
   const tbody=document.getElementById('resultsBody');
   const tr=document.createElement('tr');
+
   let epsHTML='<span style="color:var(--muted)">—</span>';
   if(eps!==null){
     const c=eps>=0.87?'var(--accent)':eps>=0.70?'#ffc800':'var(--danger)';
     epsHTML=`<span style="color:${c}">${eps.toFixed(3)}</span>`;
   }
+
   let strehlStr='—',strehlClass='';
-  if(strehl!==null){strehlStr=strehl.toFixed(3);strehlClass=strehl>=0.8?'accent':strehl>=0.5?'':'warn';}
+  if(strehl!==null){
+    strehlStr=strehl.toFixed(3);
+    strehlClass=strehl>=0.8?'accent':strehl>=0.5?'':'warn';
+  }
+
+  let eeDLStr='—';
+  if(eeDLpct!==null) eeDLStr=eeDLpct.toFixed(1)+'%';
+
   tr.innerHTML=`
     <td class="fname" title="${fname}">${fname}</td>
     <td class="muted">(${centX.toFixed(1)},${centY.toFixed(1)})</td>
@@ -839,16 +894,19 @@ function addTableRow(fname,centX,centY,umPerPx,r865px,r865um,eps,theta,dlUm,stre
     <td>${epsHTML}</td>
     <td class="muted">${theta!==null?theta.toFixed(1)+'°':'—'}</td>
     <td class="muted">${dlUm!==null?dlUm.toFixed(2):'—'}</td>
-    <td class="${strehlClass}">${strehlStr}</td>`;
+    <td class="${strehlClass}">${strehlStr}</td>
+    <td class="muted">${eeDLStr}</td>`;
   tbody.appendChild(tr);
 }
+
 function clearTable(){
   tableRows=[];
-  document.getElementById('resultsBody').innerHTML=`<tr id="emptyRow"><td colspan="9" style="text-align:center;color:var(--muted);font-style:italic;padding:14px 9px;font-size:11px;">No measurements yet — load a TIFF and click <strong style="color:var(--text);">Calculate 86.5% EE Radius</strong></td></tr>`;
+  document.getElementById('resultsBody').innerHTML=`<tr id="emptyRow"><td colspan="10" style="text-align:center;color:var(--muted);font-style:italic;padding:14px 9px;font-size:11px;">No measurements yet — load a TIFF and click <strong style="color:var(--text);">Calculate 86.5% EE Radius</strong></td></tr>`;
 }
+
 function exportCSV(){
   if(tableRows.length===0){alert('No measurements to export yet.');return;}
-  const hdr=['File','Centroid_X_px','Centroid_Y_px','um_per_px','r865_px','r865_um','Ellipticity','Angle_deg','DL_um','Strehl'];
+  const hdr=['File','Centroid_X_px','Centroid_Y_px','um_per_px','r865_px','r865_um','Ellipticity','Angle_deg','DL_um','Strehl','EE_in_DL_pct'];
   const lines=[hdr.join(',')];
   tableRows.forEach(r=>{
     lines.push([
@@ -860,7 +918,8 @@ function exportCSV(){
       r.eps!==null?r.eps.toFixed(4):'',
       r.theta!==null?r.theta.toFixed(2):'',
       r.dlUm!==null?r.dlUm.toFixed(3):'',
-      r.strehl!==null?r.strehl.toFixed(4):''
+      r.strehl!==null?r.strehl.toFixed(4):'',
+      r.eeDLpct!==null?r.eeDLpct.toFixed(2):''
     ].join(','));
   });
   const blob=new Blob([lines.join('\n')],{type:'text/csv'});
