@@ -150,15 +150,15 @@ function encodeTIFF16(intensity, width, height) {
   .ellip-chip{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:7px 13px;font-family:'IBM Plex Mono',monospace;font-size:12px;}
   .ellip-chip .el{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:2px;}
   /* Results table */
-  #resultsTable{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:11px;}
-  #resultsTable th{text-align:left;padding:5px 9px;background:var(--surface2);color:var(--muted);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);white-space:nowrap;}
-  #resultsTable td{padding:5px 9px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
-  #resultsTable tbody tr:last-child td{border-bottom:none;}
-  #resultsTable tbody tr:hover td{background:var(--surface2);}
-  #resultsTable td.accent{color:var(--accent);font-weight:500;}
-  #resultsTable td.warn{color:#ffc800;}
-  #resultsTable td.muted{color:var(--muted);}
-  #resultsTable td.fname{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:10px;}
+  #resultsTable,#liveResultsTable{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:11px;}
+  #resultsTable th,#liveResultsTable th{text-align:left;padding:5px 9px;background:var(--surface2);color:var(--muted);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);white-space:nowrap;}
+  #resultsTable td,#liveResultsTable td{padding:5px 9px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+  #resultsTable tbody tr:last-child td,#liveResultsTable tbody tr:last-child td{border-bottom:none;}
+  #resultsTable tbody tr:hover td,#liveResultsTable tbody tr:hover td{background:var(--surface2);}
+  #resultsTable td.accent,#liveResultsTable td.accent{color:var(--accent);font-weight:500;}
+  #resultsTable td.warn,#liveResultsTable td.warn{color:#ffc800;}
+  #resultsTable td.muted,#liveResultsTable td.muted{color:var(--muted);}
+  #resultsTable td.fname,#liveResultsTable td.fname{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:10px;}
   /* Accordion */
   .explain-block{margin-top:16px;border:1px solid var(--border);border-radius:6px;overflow:hidden;}
   .explain-header{display:flex;align-items:center;justify-content:space-between;padding:10px 15px;background:var(--surface2);cursor:pointer;user-select:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;transition:color .15s;}
@@ -306,12 +306,12 @@ function encodeTIFF16(intensity, width, height) {
     </div>
 
     <div class="input-row">
-      <div class="input-group"><label>Microns per pixel<sup>*</sup></label><input type="number" id="um_per_pixel" placeholder="e.g. 3.45" step="any" min="0"></div>
-      <div class="input-group"><label>Diffraction limit<sup>*</sup></label><input type="number" id="r_dl" placeholder="e.g. 5.0" step="any" min="0" oninput="checkDLConflict()"></div>
-      <div class="input-group"><label>F-number<sup>*</sup></label><input type="number" id="f_num" placeholder="e.g. 5.0" step="any" min="0" oninput="checkDLConflict()"></div>
-      <div class="input-group"><label>Laser Wavelength (nm)<sup>*</sup></label><input type="number" id="laser_wavelength" placeholder="e.g. 632.8" step="any" min="0" oninput="checkDLConflict()"></div>
-      <div class="input-group"><label>Laser Energy (J)<sup>*</sup></label><input type="number" id="laser_energy" placeholder="e.g. 5.0" step="any" min="0"></div>
-      <div class="input-group"><label>Pulse Duration τ (fs)<sup>*</sup></label><input type="number" id="pulse_duration" placeholder="e.g. 30" step="any" min="0"></div>
+      <div class="input-group"><label>Microns per pixel<sup>*</sup></label><input type="number" id="um_per_pixel" placeholder="e.g. 3.45" step="any" min="0" oninput="mirrorParam('live_um_per_pixel',this.value)"></div>
+      <div class="input-group"><label>Diffraction limit<sup>*</sup></label><input type="number" id="r_dl" placeholder="e.g. 5.0" step="any" min="0" oninput="onDLParamInput('live_r_dl',this.value);checkDLConflict()"></div>
+      <div class="input-group"><label>F-number<sup>*</sup></label><input type="number" id="f_num" placeholder="e.g. 5.0" step="any" min="0" oninput="onDLParamInput('live_f_num',this.value);checkDLConflict()"></div>
+      <div class="input-group"><label>Laser Wavelength (nm)<sup>*</sup></label><input type="number" id="laser_wavelength" placeholder="e.g. 632.8" step="any" min="0" oninput="onDLParamInput('live_laser_wavelength',this.value);checkDLConflict()"></div>
+      <div class="input-group"><label>Laser Energy (J)<sup>*</sup></label><input type="number" id="laser_energy" placeholder="e.g. 5.0" step="any" min="0" oninput="mirrorParam('live_laser_energy',this.value)"></div>
+      <div class="input-group"><label>Pulse Duration τ (fs)<sup>*</sup></label><input type="number" id="pulse_duration" placeholder="e.g. 30" step="any" min="0" oninput="mirrorParam('live_pulse_duration',this.value)"></div>
     </div>
     <div id="dlConflictWarning" style="display:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--danger, #ff5555);margin-top:5px;">You've entered both a diffraction limit and an f-number/wavelength - the calculated diffraction limit from the f-number and wavelength will be used and the manual diffraction limit will be ignored.</div>
     <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:5px;">*Optional</div>
@@ -480,11 +480,11 @@ function encodeTIFF16(intensity, width, height) {
     <p>
       Peak intensity \(I_0\) [W/cm²] for a spatially and temporally Gaussian pulse of energy \(E\) [J], FWHM duration τ [fs], and 1/e² radius \(r_{86.5}\) [Microns].
       
-      \(a_0\) uses λ in Microns; the constant 1.37×10¹⁸ W/cm²/Microns² is the relativistic intensity threshold for λ = 1 Microns.
+      \(a_0\) uses λ entered in nm (converted internally); the constant 1.37×10¹⁸ W/cm²/Microns² is the relativistic intensity threshold for λ = 1 Micron.
     </p>
     <div class="input-row">
       <div class="input-group"><label>Pulse duration τ (fs) *</label><input type="number" id="i_tau" placeholder="e.g. 30" step="any" min="0"></div>
-      <div class="input-group"><label>Wavelength λ (Microns)</label><input type="number" id="i_lambda" placeholder="e.g. 0.8" step="any" min="0" value="0.8"></div>
+      <div class="input-group"><label>Wavelength λ (nm)</label><input type="number" id="i_lambda" placeholder="e.g. 800" step="any" min="0" value="800"></div>
       <div class="input-group"><label>Energy E (J) — optional</label><input type="number" id="i_energy" placeholder="e.g. 20" step="any" min="0"></div>
       <div class="input-group"><label>r₈₆.₅ (Microns) — optional</label><input type="number" id="i_radius" placeholder="e.g. 8.0" step="any" min="0"></div>
     </div>
@@ -515,7 +515,7 @@ function encodeTIFF16(intensity, width, height) {
     <p>Enter w₀ and λ to compute w(z) at distance z from focus.</p>
     <div class="input-row">
       <div class="input-group"><label>Beam waist w₀ (m)</label><input type="number" id="w0_g" placeholder="e.g. 50e-6" step="any"></div>
-      <div class="input-group"><label>Wavelength λ (m)</label><input type="number" id="lambda_g" placeholder="e.g. 800e-9" step="any"></div>
+      <div class="input-group"><label>Wavelength λ (nm)</label><input type="number" id="lambda_g" placeholder="e.g. 800" step="any" min="0"></div>
       <div class="input-group"><label>Distance z (m)</label><input type="number" id="z_g" placeholder="e.g. 0.05" step="any"></div>
     </div>
     <div class="btn-group"><button class="btn btn-primary" onclick="calcGaussian()">Calculate &amp; Plot</button></div>
@@ -528,7 +528,19 @@ function encodeTIFF16(intensity, width, height) {
 <div id="livefolder" class="tab">
   <div class="card">
     <h2>Live Folder Monitor — Continuous TIFF Stream Analysis</h2>
-    <p>Select the folder your camera or acquisition software writes TIFF frames into. The folder is scanned every 250 ms; each new .tif/.tiff file is analyzed automatically, plotted on the live Strehl graph below, and appended to the Measurement Log (Spot Calc tab — included in Export CSV).</p>
+    <p>Select the folder your camera or acquisition software writes TIFF frames into. The folder is scanned every 250 ms; each new .tif/.tiff file is analyzed automatically, plotted on the live Strehl graph below, and appended to the Measurement Log below (shared with the Spot Calc tab — included in Export CSV).</p>
+
+    <!-- Laser system parameters (kept in sync with the Spot Calc tab) -->
+    <div class="input-row">
+      <div class="input-group"><label>Microns per pixel<sup>*</sup></label><input type="number" id="live_um_per_pixel" placeholder="e.g. 3.45" step="any" min="0" oninput="mirrorParam('um_per_pixel',this.value)"></div>
+      <div class="input-group"><label>Diffraction limit<sup>*</sup></label><input type="number" id="live_r_dl" placeholder="e.g. 5.0" step="any" min="0" oninput="onDLParamInput('r_dl',this.value);checkDLConflict()"></div>
+      <div class="input-group"><label>F-number<sup>*</sup></label><input type="number" id="live_f_num" placeholder="e.g. 5.0" step="any" min="0" oninput="onDLParamInput('f_num',this.value);checkDLConflict()"></div>
+      <div class="input-group"><label>Laser Wavelength (nm)<sup>*</sup></label><input type="number" id="live_laser_wavelength" placeholder="e.g. 632.8" step="any" min="0" oninput="onDLParamInput('laser_wavelength',this.value);checkDLConflict()"></div>
+      <div class="input-group"><label>Laser Energy (J)<sup>*</sup></label><input type="number" id="live_laser_energy" placeholder="e.g. 5.0" step="any" min="0" oninput="mirrorParam('laser_energy',this.value)"></div>
+      <div class="input-group"><label>Pulse Duration τ (fs)<sup>*</sup></label><input type="number" id="live_pulse_duration" placeholder="e.g. 30" step="any" min="0" oninput="mirrorParam('pulse_duration',this.value)"></div>
+    </div>
+    <div id="liveDlConflictWarning" style="display:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--danger, #ff5555);margin-top:5px;">You've entered both a diffraction limit and an f-number/wavelength - the calculated diffraction limit from the f-number and wavelength will be used and the manual diffraction limit will be ignored.</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:5px;">*Optional — kept in sync with the Spot Calc tab</div>
     <div class="btn-group" style="align-items:center;">
       <button class="btn btn-primary" onclick="selectLiveFolder()">Select Folder</button>
       <button class="btn btn-orange" id="liveStopBtn" style="display:none;" onclick="stopLiveFolder()">Stop Monitoring</button>
@@ -537,6 +549,74 @@ function encodeTIFF16(intensity, width, height) {
     <div class="plot-title" style="margin-top:14px;">r₈₆.₅ (px) and Strehl ratio — live</div>
     <canvas id="liveMetricCanvas" width="760" height="240"></canvas>
     <div id="liveRecent" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;"></div>
+
+    <!-- Measurement Log -->
+    <div style="margin-top:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Measurement Log</span>
+        <div style="display:flex;gap:7px;">
+          <select id="liveMeasurementSort" aria-label="Sort measurement log" onchange="sortLiveMeasurements(this.value)" style="padding:4px 7px;font-size:10px;">
+            <option value="oldest">Oldest first</option>
+            <option value="newest">Newest first</option>
+            <option value="strehl-high">Highest Strehl</option>
+            <option value="strehl-low">Lowest Strehl</option>
+            <option value="r865-high">Largest r₈₆.₅</option>
+            <option value="r865-low">Smallest r₈₆.₅</option>
+            <option value="r865um-high">Largest r₈₆.₅ (Microns)</option>
+            <option value="r865um-low">Smallest r₈₆.₅ (Microns)</option>
+            <option value="ellip-high">Highest ellipticity</option>
+            <option value="ellip-low">Lowest ellipticity</option>
+            <option value="angle-high">Largest angle</option>
+            <option value="angle-low">Smallest angle</option>
+            <option value="peak-high">Highest peak intensity</option>
+            <option value="peak-low">Lowest peak intensity</option>
+            <option value="fwhmx-high">Largest FWHM X</option>
+            <option value="fwhmx-low">Smallest FWHM X</option>
+            <option value="fwhmy-high">Largest FWHM Y</option>
+            <option value="fwhmy-low">Smallest FWHM Y</option>
+            <option value="offset-high">Largest centroid offset</option>
+            <option value="offset-low">Smallest centroid offset</option>
+            <option value="sat-high">Most saturated pixels</option>
+            <option value="sat-low">Fewest saturated pixels</option>
+            <option value="ee-high">Highest EE in DL</option>
+            <option value="ee-low">Lowest EE in DL</option>
+            <option value="file-az">File A–Z</option>
+            <option value="file-za">File Z–A</option>
+          </select>
+          <button class="btn btn-orange" style="padding:4px 10px;font-size:10px;" onclick="exportCSV()">Export CSV</button>
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:10px;" onclick="clearTable()">Clear</button>
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:10px;" id="toggleLiveLogBtn" onclick="toggleLiveLogVisibility()">Hide Log</button>
+        </div>
+      </div>
+      <div id="liveLogTableContainer" style="overflow-x:auto;">
+        <table id="liveResultsTable">
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Timestamp (Yr-Mth-Day-Hr-Min-Sec)</th>
+              <th>Centroid (px)</th>
+              <th>Peak intensity</th>
+              <th>FWHM (X,Y) (px)</th>
+              <th>Centroid offset (px)</th>
+              <th>Saturated (%)</th>
+              <th>Microns/px</th>
+              <th>r₈₆.₅ (px)</th>
+              <th>r₈₆.₅ (Microns)</th>
+              <th>Ellipticity ε</th>
+              <th>Angle °</th>
+              <th>DL (Microns)</th>
+              <th>Strehl</th>
+              <th>EE in DL (%)</th>
+              <th>EE in DL (J)</th>
+              <th>Focus Intensity (W/cm²)</th>
+            </tr>
+          </thead>
+          <tbody id="liveResultsBody">
+            <tr><td colspan="17" style="text-align:center;color:var(--muted);font-style:italic;padding:14px 9px;font-size:11px;">No measurements yet — select a folder above to begin live monitoring</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -573,6 +653,7 @@ let ellipEps=null,ellipW1=null,ellipW2=null,ellipTheta=null;
 let tableRows=[];
 let measurementSequence=0;
 let measurementSort='oldest';
+let liveMeasurementSort='oldest';
 let videoObjectUrl=null;
 let ffmpegInstance=null;
 let ffmpegLoadPromise=null;
@@ -948,7 +1029,8 @@ function measureVideoFrame(){
   for(const sample of radial){cumulative+=sample.I;if(cumulative>=target){frameR865=sample.r;break;}}
   const um=parseFloat(document.getElementById('um_per_pixel').value);
   const rdl=parseFloat(dlRadiusUm);
-  const frameStrehl=um>0&&rdl>0?(rdl/(frameR865*um))**2:null;
+  let frameStrehl=um>0&&rdl>0?(rdl/(frameR865*um))**2:null;
+  if(frameStrehl!==null&&frameStrehl>5) frameStrehl=0;
   return {r865:frameR865,strehl:frameStrehl};
 }
 
@@ -997,6 +1079,7 @@ function measureVideoFrameFull(){
     if(!isNaN(rdl)&&rdl>0){
       dlUmVal=rdl;
       strehlVal=(rdl/r865_um)**2;
+      if(strehlVal>5) strehlVal=0;
       eeDLpct=computeEEinDL(intensity,imgWidth,imgHeight,fcx,fcy,rdl/um);
     }
   }
@@ -1112,7 +1195,23 @@ const wavelength = parseFloat(document.getElementById('laser_wavelength').value)
 const rdlFilled = !isNaN(rdl) && rdl > 0;
 const otherFilled = (!isNaN(fNum) && fNum > 0) || (!isNaN(wavelength) && wavelength > 0);
 
-document.getElementById('dlConflictWarning').style.display = (rdlFilled && otherFilled) ? 'block' : 'none';
+const dlWarnDisplay=(rdlFilled && otherFilled) ? 'block' : 'none';
+const warnSpot=document.getElementById('dlConflictWarning');
+if(warnSpot) warnSpot.style.display=dlWarnDisplay;
+const warnLive=document.getElementById('liveDlConflictWarning');
+if(warnLive) warnLive.style.display=dlWarnDisplay;
+}
+
+// Mirror a laser-system parameter between the Spot Calc and Live Folder inputs
+function mirrorParam(targetId,value){
+  const target=document.getElementById(targetId);
+  if(target && target.value!==value) target.value=value;
+}
+
+// Mirror a diffraction-limit-related parameter and refresh the active DL radius
+function onDLParamInput(targetId,value){
+  mirrorParam(targetId,value);
+  dlRadiusUm=computeDiffractionLimit();
 }
 
 function computeDiffractionLimit() {
@@ -1243,6 +1342,7 @@ async function runBatchAnalysis(){
         r865_um=fr865*um;
         if(!isNaN(rdl)&&rdl>0){
           strehlVal=(rdl/r865_um)**2;
+          if(strehlVal>5) strehlVal=0;
           const brdl_px=rdl/um;
           eeDLpct=computeEEinDL(cleaned,width,height,fcx,fcy,brdl_px);
         }
@@ -1526,6 +1626,7 @@ function calculateEE(){
     r865_um=r865*um;
     if(!isNaN(rdl)&&rdl>0){
       strehlVal=(rdl/r865_um)**2;
+      if(strehlVal>5) strehlVal=0;
       const rdl_px=rdl/um;
       eeDLpct=computeEEinDL(intensity,imgWidth,imgHeight,cx,cy,rdl_px);
     }
@@ -1571,7 +1672,9 @@ function plotDiffractionLimit(){
   const rdl=parseFloat(dlRadiusUm);
   if(isNaN(um)||um<=0||isNaN(rdl)||rdl<=0){alert('Please enter both Microns/pixel and DL radius (Microns).');return;}
   if(!intensityData){alert('Please run Calculate 86.5% EE Radius first.');return;}
-  const rdl_px=rdl/um,r865_um=r865*um,strehl=(rdl/r865_um)**2;
+  const rdl_px=rdl/um,r865_um=r865*um;
+  let strehl=(rdl/r865_um)**2;
+  if(strehl>5) strehl=0;
   showBothPlots(r865>0);
   [document.getElementById('spotCanvas'),document.getElementById('spotCanvasLog')].forEach(canvas=>{
     const ctx=canvas.getContext('2d'),lw=Math.max(1,imgWidth/600);
@@ -1642,18 +1745,13 @@ function sortMeasurements(sortKey){
   renderMeasurementTable();
 }
 
-function renderMeasurementTable(){
-  const tbody=document.getElementById('resultsBody');
-  if(tableRows.length===0){
-    tbody.innerHTML=`<tr id="emptyRow"><td colspan="17" style="text-align:center;color:var(--muted);font-style:italic;padding:14px 9px;font-size:11px;">No measurements yet — load a TIFF or video and click <strong style="color:var(--text);">Calculate 86.5% EE Radius</strong></td></tr>`;
-    return;
-  }
+function getSortedRows(sortKey){
   const sortedRows=[...tableRows];
-  const descending=['strehl-high','r865-high','r865um-high','ellip-high','angle-high','peak-high','fwhmx-high','fwhmy-high','offset-high','sat-high','ee-high'].includes(measurementSort);
-  if(measurementSort==='file-az'||measurementSort==='file-za'){
-    sortedRows.sort((a,b)=>a.fname.localeCompare(b.fname,undefined,{numeric:true})*(measurementSort==='file-za'?-1:1));
-  } else if(measurementSort==='oldest'||measurementSort==='newest'){
-    sortedRows.sort((a,b)=>(a.sequence-b.sequence)*(measurementSort==='newest'?-1:1));
+  const descending=['strehl-high','r865-high','r865um-high','ellip-high','angle-high','peak-high','fwhmx-high','fwhmy-high','offset-high','sat-high','ee-high'].includes(sortKey);
+  if(sortKey==='file-az'||sortKey==='file-za'){
+    sortedRows.sort((a,b)=>a.fname.localeCompare(b.fname,undefined,{numeric:true})*(sortKey==='file-za'?-1:1));
+  } else if(sortKey==='oldest'||sortKey==='newest'){
+    sortedRows.sort((a,b)=>(a.sequence-b.sequence)*(sortKey==='newest'?-1:1));
   } else {
     const key={
       'strehl-high':'strehl','strehl-low':'strehl',
@@ -1667,7 +1765,7 @@ function renderMeasurementTable(){
       'offset-high':'centroidOffset','offset-low':'centroidOffset',
       'sat-high':'saturatedPct','sat-low':'saturatedPct',
       'ee-high':'eeDLpct','ee-low':'eeDLpct'
-    }[measurementSort];
+    }[sortKey];
     sortedRows.sort((a,b)=>{
       const aMissing=a[key]===null||a[key]===undefined;
       const bMissing=b[key]===null||b[key]===undefined;
@@ -1677,8 +1775,41 @@ function renderMeasurementTable(){
       return (a[key]-b[key])*(descending?-1:1);
     });
   }
+  return sortedRows;
+}
+
+function renderMeasurementTable(){
+  const tbody=document.getElementById('resultsBody');
+  if(tableRows.length===0){
+    tbody.innerHTML=`<tr><td colspan="17" style="text-align:center;color:var(--muted);font-style:italic;padding:14px 9px;font-size:11px;">No measurements yet — load a TIFF or video and click <strong style="color:var(--text);">Calculate 86.5% EE Radius</strong></td></tr>`;
+  } else {
+    tbody.innerHTML='';
+    getSortedRows(measurementSort).forEach(row=>appendMeasurementRow(tbody,row));
+  }
+  renderLiveMeasurementTable();
+}
+
+function renderLiveMeasurementTable(){
+  const tbody=document.getElementById('liveResultsBody'); if(!tbody) return;
+  if(tableRows.length===0){
+    tbody.innerHTML=`<tr><td colspan="17" style="text-align:center;color:var(--muted);font-style:italic;padding:14px 9px;font-size:11px;">No measurements yet — select a folder above to begin live monitoring</td></tr>`;
+    return;
+  }
   tbody.innerHTML='';
-  sortedRows.forEach(row=>appendMeasurementRow(tbody,row));
+  getSortedRows(liveMeasurementSort).forEach(row=>appendMeasurementRow(tbody,row));
+}
+
+function sortLiveMeasurements(sortKey){
+  liveMeasurementSort=sortKey;
+  renderLiveMeasurementTable();
+}
+
+function toggleLiveLogVisibility(){
+  const container=document.getElementById('liveLogTableContainer');
+  const btn=document.getElementById('toggleLiveLogBtn');
+  const isHidden=container.style.display==='none';
+  container.style.display=isHidden?'':'none';
+  btn.textContent=isHidden?'Hide Log':'Show Log';
 }
 
 function appendMeasurementRow(tbody,row){
@@ -1912,6 +2043,7 @@ function analyzeTiffMetrics(arrayBuffer){
     if(!isNaN(rdl)&&rdl>0){
       dlUmVal=rdl;
       strehlVal=(rdl/r865_um)**2;
+      if(strehlVal>5) strehlVal=0;
       eeDLpct=computeEEinDL(cleaned,width,height,fcx,fcy,rdl/um);
     }
   }
@@ -1963,7 +2095,8 @@ function a0fromI(I,lam_um){ return Math.sqrt(I*lam_um*lam_um/1.37e18); }
 
 function calcIntensityPlots(){
   const tau_fs=parseFloat(document.getElementById('i_tau').value);
-  const lam_um=parseFloat(document.getElementById('i_lambda').value)||0.8;
+  const lam_nm=parseFloat(document.getElementById('i_lambda').value)||800;
+  const lam_um=lam_nm/1000;
   const E_in=parseFloat(document.getElementById('i_energy').value);
   const r_in=parseFloat(document.getElementById('i_radius').value);
 
@@ -1982,7 +2115,7 @@ function calcIntensityPlots(){
     const I=peakI(E_in,tau_s,r_in*1e-4);
     const a=a0fromI(I,lam_um);
     let html=`<div class="result-label">Peak values at given inputs</div>`;
-    html+=`E=${E_in} J &nbsp;|&nbsp; r₈₆.₅=${r_in} Microns &nbsp;|&nbsp; τ=${tau_fs} fs &nbsp;|&nbsp; λ=${lam_um} Microns<br>`;
+    html+=`E=${E_in} J &nbsp;|&nbsp; r₈₆.₅=${r_in} Microns &nbsp;|&nbsp; τ=${tau_fs} fs &nbsp;|&nbsp; λ=${lam_nm} nm<br>`;
     html+=`<span style="color:var(--accent)">I₀ = ${fmtSci(I)} W/cm²</span> &nbsp;&nbsp; <span style="color:var(--accent2)">a₀ = ${a.toFixed(3)}</span>`;
     showResult('intensityResult',html);
   }
@@ -2080,9 +2213,10 @@ function drawDualLogPlot(canvas,xs,Is,A0s,xLabel,yLabelL,yLabelR,xMin,xMax,marke
 // ════════ GAUSSIAN ════════
 function calcGaussian(){
   const w0=parseFloat(document.getElementById('w0_g').value);
-  const lambda=parseFloat(document.getElementById('lambda_g').value);
+  const lambda_nm=parseFloat(document.getElementById('lambda_g').value);
   const z=parseFloat(document.getElementById('z_g').value);
-  if(isNaN(w0)||isNaN(lambda)||isNaN(z)||w0<=0||lambda<=0){showResult('gaussianResult','Please enter valid positive values for w₀ and λ.',true);return;}
+  const lambda=lambda_nm*1e-9;
+  if(isNaN(w0)||isNaN(lambda_nm)||isNaN(z)||w0<=0||lambda_nm<=0){showResult('gaussianResult','Please enter valid positive values for w₀ and λ.',true);return;}
   const zR=Math.PI*w0*w0/lambda,wz=w0*Math.sqrt(1+(z/zR)**2);
   let html=`<div class="result-label">Result at z = ${fmtSci(z)} m</div>`;
   html+=`z_R = ${fmtSci(zR)} m &nbsp;|&nbsp; w(z) = ${fmtSci(wz)} m`;
