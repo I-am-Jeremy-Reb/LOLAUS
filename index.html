@@ -307,7 +307,7 @@ function encodeTIFF16(intensity, width, height) {
 
     <div class="input-row">
       <div class="input-group"><label>Microns per pixel<sup>*</sup></label><input type="number" id="um_per_pixel" placeholder="e.g. 3.45" step="any" min="0" oninput="mirrorParam('live_um_per_pixel',this.value)"></div>
-      <div class="input-group"><label>Diffraction limit<sup>*</sup></label><input type="number" id="r_dl" placeholder="e.g. 5.0" step="any" min="0" oninput="onDLParamInput('live_r_dl',this.value);checkDLConflict()"></div>
+      <div class="input-group"><label>Diffraction limit (microns)<sup>*</sup></label><input type="number" id="r_dl" placeholder="e.g. 5.0" step="any" min="0" oninput="onDLParamInput('live_r_dl',this.value);checkDLConflict()"></div>
       <div class="input-group"><label>F-number<sup>*</sup></label><input type="number" id="f_num" placeholder="e.g. 5.0" step="any" min="0" oninput="onDLParamInput('live_f_num',this.value);checkDLConflict()"></div>
       <div class="input-group"><label>Laser Wavelength (nm)<sup>*</sup></label><input type="number" id="laser_wavelength" placeholder="e.g. 632.8" step="any" min="0" oninput="onDLParamInput('live_laser_wavelength',this.value);checkDLConflict()"></div>
       <div class="input-group"><label>Laser Energy (J)<sup>*</sup></label><input type="number" id="laser_energy" placeholder="e.g. 5.0" step="any" min="0" oninput="mirrorParam('live_laser_energy',this.value)"></div>
@@ -1255,7 +1255,7 @@ const hasManual = !isNaN(manualRdl) && manualRdl > 0;
 const hasBoth = !isNaN(fNum) && fNum > 0 && !isNaN(laserWavelength) && laserWavelength > 0;
 
 if (hasBoth) {
-return 1 / (fNum * laserWavelength * 1e-9);
+return 2 * fNum * laserWavelength * 1e-3 / 3.1415
 }
 if (hasManual) {
 return manualRdl;
