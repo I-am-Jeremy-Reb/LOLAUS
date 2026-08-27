@@ -455,7 +455,7 @@ function encodeTIFF16(intensity, width, height) {
               <th>Strehl</th>
               <th>EE in DL (%)</th>
               <th>EE in DL (J)</th>
-              <th>Focus Intensity (W/cm²)</th>
+              <th>DL Focus Intensity (W/cm²)</th>
             </tr>
           </thead>
           <tbody id="resultsBody">
@@ -528,9 +528,9 @@ function encodeTIFF16(intensity, width, height) {
 <div id="livefolder" class="tab">
   <div class="card">
     <h2>Live Folder Monitor — Continuous TIFF Stream Analysis</h2>
-    <p>Select the folder your camera or acquisition software writes TIFF frames into. The folder is scanned every 250 ms; each new .tif/.tiff file is analyzed automatically, plotted on the live Strehl graph below, and appended to the Measurement Log below (shared with the Spot Calc tab — included in Export CSV).</p>
+    <p>Select the folder your camera or acquisition software writes TIFF frames into. The folder is scanned at the selected interval; each new .tif/.tiff file is analyzed automatically, plotted on the live Strehl graph below, and appended to the Measurement Log below.</p>
 
-    <!-- Laser system parameters (kept in sync with the Spot Calc tab) -->
+    <!-- Laser system parameters -->
     <div class="input-row">
       <div class="input-group"><label>Microns per pixel<sup>*</sup></label><input type="number" id="live_um_per_pixel" placeholder="e.g. 3.45" step="any" min="0" oninput="mirrorParam('um_per_pixel',this.value)"></div>
       <div class="input-group"><label>Diffraction limit<sup>*</sup></label><input type="number" id="live_r_dl" placeholder="e.g. 5.0" step="any" min="0" oninput="onDLParamInput('r_dl',this.value);checkDLConflict()"></div>
@@ -540,15 +540,47 @@ function encodeTIFF16(intensity, width, height) {
       <div class="input-group"><label>Pulse Duration τ (fs)<sup>*</sup></label><input type="number" id="live_pulse_duration" placeholder="e.g. 30" step="any" min="0" oninput="mirrorParam('pulse_duration',this.value)"></div>
     </div>
     <div id="liveDlConflictWarning" style="display:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--danger, #ff5555);margin-top:5px;">You've entered both a diffraction limit and an f-number/wavelength - the calculated diffraction limit from the f-number and wavelength will be used and the manual diffraction limit will be ignored.</div>
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:5px;">*Optional — kept in sync with the Spot Calc tab</div>
-    <div class="btn-group" style="align-items:center;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:5px;">*Optional</div>
+    <div class="btn-group" style="align-items:flex-end;">
       <button class="btn btn-primary" onclick="selectLiveFolder()">Select Folder</button>
       <button class="btn btn-orange" id="liveStopBtn" style="display:none;" onclick="stopLiveFolder()">Stop Monitoring</button>
+      <div class="input-group" style="flex:0 0 auto;min-width:140px;">
+        <label>Scan interval</label>
+        <select id="liveScanInterval" aria-label="Scan interval" onchange="setLiveScanInterval(this.value)">
+          <option value="1">1 ms</option>
+          <option value="5">5 ms</option>
+          <option value="10">10 ms</option>
+          <option value="25">25 ms</option>
+          <option value="50">50 ms</option>
+          <option value="100">100 ms</option>
+          <option value="250" selected>250 ms</option>
+          <option value="500">500 ms</option>
+          <option value="1000">1000 ms</option>
+        </select>
+      </div>
     </div>
     <div id="liveStatus" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:8px;">No folder selected.</div>
-    <div class="plot-title" style="margin-top:14px;">r₈₆.₅ (px) and Strehl ratio — live</div>
+    <div class="plot-title" style="margin-top:14px;">Live Strehl Ratio and r₈₆.₅ (px)</div>
     <canvas id="liveMetricCanvas" width="760" height="240"></canvas>
     <div id="liveRecent" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px;"></div>
+
+    <!-- Latest Image -->
+    <div style="margin-top:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Latest Image</span>
+        <button class="btn btn-secondary" style="padding:4px 10px;font-size:10px;" id="toggleLiveImageBtn" onclick="toggleLiveImageVisibility()">Hide Analysis</button>
+      </div>
+      <div id="liveImageRow" style="display:flex;flex-wrap:wrap;gap:10px;">
+        <div style="flex:1;min-width:270px;">
+          <div class="plot-title" id="liveTitleLinear">No image analyzed yet</div>
+          <div class="canvas-wrap visible" style="margin-top:4px;"><canvas id="liveSpotCanvas" style="cursor:pointer;" onclick="openImageModal(this, liveIntensityData, liveImgW, liveImgH, liveR865px)"></canvas></div>
+        </div>
+        <div style="flex:1;min-width:270px;">
+          <div class="plot-title" id="liveTitleLog"></div>
+          <div class="canvas-wrap visible" style="margin-top:4px;"><canvas id="liveSpotCanvasLog" style="cursor:pointer;" onclick="openImageModal(this, liveIntensityData, liveImgW, liveImgH, liveR865px)"></canvas></div>
+        </div>
+      </div>
+    </div>
 
     <!-- Measurement Log -->
     <div style="margin-top:24px;">
@@ -608,7 +640,7 @@ function encodeTIFF16(intensity, width, height) {
               <th>Strehl</th>
               <th>EE in DL (%)</th>
               <th>EE in DL (J)</th>
-              <th>Focus Intensity (W/cm²)</th>
+              <th>DL Focus Intensity (W/cm²)</th>
             </tr>
           </thead>
           <tbody id="liveResultsBody">
@@ -1215,13 +1247,20 @@ function onDLParamInput(targetId,value){
 }
 
 function computeDiffractionLimit() {
-  const fNum=parseFloat(document.getElementById('f_num').value);
-  const laserWavelength=parseFloat(document.getElementById('laser_wavelength').value);
+const manualRdl = parseFloat(document.getElementById('r_dl').value);
+const fNum = parseFloat(document.getElementById('f_num').value);
+const laserWavelength = parseFloat(document.getElementById('laser_wavelength').value);
 
-  if (!fNum || !laserWavelength) return null;
+const hasManual = !isNaN(manualRdl) && manualRdl > 0;
+const hasBoth = !isNaN(fNum) && fNum > 0 && !isNaN(laserWavelength) && laserWavelength > 0;
 
-  const r_dl = 1 / (fNum * laserWavelength);
-  return r_dl;
+if (hasBoth) {
+return 1 / (fNum * laserWavelength * 1e-9);
+}
+if (hasManual) {
+return manualRdl;
+}
+return null;
 }
 
 // ════════ % ENERGY WITHIN DL SPOT ════════
@@ -1533,19 +1572,21 @@ function closeImageModal() {
 document.getElementById('imageModal').style.display = 'none';
 }
 
-function renderLinear(canvas,intensity){
-  canvas.width=imgWidth; canvas.height=imgHeight;
-  const ctx=canvas.getContext('2d'),imgData=ctx.createImageData(imgWidth,imgHeight);
-  const N=imgWidth*imgHeight; let iMax=0;
+function renderLinear(canvas,intensity,w,h){
+  w=w||imgWidth; h=h||imgHeight;
+  canvas.width=w; canvas.height=h;
+  const ctx=canvas.getContext('2d'),imgData=ctx.createImageData(w,h);
+  const N=w*h; let iMax=0;
   for(let i=0;i<N;i++) if(intensity[i]>iMax) iMax=intensity[i];
   const sc=iMax>0?255/iMax:1;
   for(let i=0;i<N;i++){const v=Math.round(intensity[i]*sc);imgData.data[i*4]=v;imgData.data[i*4+1]=v;imgData.data[i*4+2]=v;imgData.data[i*4+3]=255;}
   ctx.putImageData(imgData,0,0);
 }
-function renderLog(canvas,intensity){
-  canvas.width=imgWidth; canvas.height=imgHeight;
-  const ctx=canvas.getContext('2d'),imgData=ctx.createImageData(imgWidth,imgHeight);
-  const N=imgWidth*imgHeight; let iMax=0;
+function renderLog(canvas,intensity,w,h){
+  w=w||imgWidth; h=h||imgHeight;
+  canvas.width=w; canvas.height=h;
+  const ctx=canvas.getContext('2d'),imgData=ctx.createImageData(w,h);
+  const N=w*h; let iMax=0;
   for(let i=0;i<N;i++) if(intensity[i]>iMax) iMax=intensity[i];
   const logMax=Math.log10(iMax+1);
   for(let i=0;i<N;i++){
@@ -1822,10 +1863,10 @@ function appendMeasurementRow(tbody,row){
     epsHTML=`<span style="color:${c}">${eps.toFixed(3)}</span>`;
   }
 
-  let strehlStr='—',strehlClass='';
+  let strehlStr='—',strehlColor='var(--muted)';
   if(strehl!==null){
     strehlStr=strehl.toFixed(3);
-    strehlClass=strehl>=0.8?'accent':strehl>=0.5?'':'warn';
+    strehlColor=strehl>=1?'var(--danger)':strehl>=0.5?'var(--accent)':strehl>=0.2?'#ffc800':'#ffffff';
   }
 
   let eeDLStr='—';
@@ -1850,7 +1891,7 @@ function appendMeasurementRow(tbody,row){
     <td>${epsHTML}</td>
     <td class="muted">${theta!==null?theta.toFixed(1)+'°':'—'}</td>
     <td class="muted">${dlUm!==null?dlUm.toFixed(2):'—'}</td>
-    <td class="${strehlClass}">${strehlStr}</td>
+    <td style="color:${strehlColor}">${strehlStr}</td>
     <td class="muted">${eeDLStr}</td>
     <td class="muted">${eeDLJStr}</td>
     <td class="muted">${focusIStr}</td>`;
@@ -1905,6 +1946,20 @@ function exportCSV(){
 let liveDirHandle=null,liveTimer=null,liveBusy=false;
 const liveSeen=new Map();
 let liveSamples=[],liveStart=0,liveCount=0;
+let liveScanIntervalMs=250;
+let liveIntensityData=null,liveImgW=0,liveImgH=0,liveR865px=0;
+
+function setLiveScanInterval(ms){
+  liveScanIntervalMs=parseInt(ms,10)||250;
+  if(liveTimer){
+    clearInterval(liveTimer);
+    liveTimer=setInterval(scanLiveFolder,liveScanIntervalMs);
+  }
+  if(liveDirHandle){
+    const st=document.getElementById('liveStatus');
+    if(st) st.innerHTML='Watching folder <strong>'+liveDirHandle.name+'</strong> &nbsp;<span class="status-badge status-ok">scanning every '+liveScanIntervalMs+' ms</span>';
+  }
+}
 
 async function selectLiveFolder(){
   if(!window.showDirectoryPicker){
@@ -1916,11 +1971,21 @@ async function selectLiveFolder(){
   }catch(e){return;}
   stopLiveFolder(true);
   liveSeen.clear();liveSamples=[];liveCount=0;liveStart=performance.now();
+  liveIntensityData=null;liveImgW=0;liveImgH=0;liveR865px=0;
+  const liveTitleLin=document.getElementById('liveTitleLinear'),liveTitleLg=document.getElementById('liveTitleLog');
+  if(liveTitleLin) liveTitleLin.textContent='No image analyzed yet';
+  if(liveTitleLg) liveTitleLg.textContent='';
+  ['liveSpotCanvas','liveSpotCanvasLog'].forEach(id=>{
+    const c=document.getElementById(id);
+    if(c){const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);}
+  });
   dlRadiusUm=computeDiffractionLimit();
-  document.getElementById('liveStatus').innerHTML='Watching folder <strong>'+liveDirHandle.name+'</strong> &nbsp;<span class="status-badge status-ok">scanning every 250 ms</span>';
+  const intervalSelect=document.getElementById('liveScanInterval');
+  if(intervalSelect) liveScanIntervalMs=parseInt(intervalSelect.value,10)||250;
+  document.getElementById('liveStatus').innerHTML='Watching folder <strong>'+liveDirHandle.name+'</strong> &nbsp;<span class="status-badge status-ok">scanning every '+liveScanIntervalMs+' ms</span>';
   document.getElementById('liveStopBtn').style.display='';
   drawLiveMetrics();
-  liveTimer=setInterval(scanLiveFolder,250);
+  liveTimer=setInterval(scanLiveFolder,liveScanIntervalMs);
   scanLiveFolder();
 }
 
@@ -1971,12 +2036,53 @@ async function analyzeLiveFile(file,name){
     addTableRow(name.replace(/\.[^.]+$/,''),getTimestamp(),
       res.fcx,res.fcy,(res.umPerPx!==null)?res.umPerPx:null,
       res.r865px,res.r865um,res.eps,res.theta,res.core,res.dlUm,res.strehl,res.eeDLpct);
+    renderLiveImagePair(name,res);
     const recent=document.getElementById('liveRecent');
     if(recent) recent.textContent='Last analyzed: '+name+' — r86.5 '+(res.r865um!==null?res.r865um.toFixed(2)+' um':'—')+(res.strehl!==null?', Strehl '+res.strehl.toFixed(3):'')+' ('+liveCount+' total)';
   }catch(err){
     const recent=document.getElementById('liveRecent');
     if(recent) recent.textContent='Error analyzing '+name+': '+err.message;
   }
+}
+
+// ════════ LATEST IMAGE (Live Folder tab) ════════
+function renderLiveImagePair(name,res){
+  const cLin=document.getElementById('liveSpotCanvas'),cLog=document.getElementById('liveSpotCanvasLog');
+  if(!cLin||!cLog) return;
+  liveIntensityData=res.cleaned; liveImgW=res.width; liveImgH=res.height; liveR865px=res.r865px||0;
+  renderLinear(cLin,res.cleaned,res.width,res.height);
+  renderLog(cLog,res.cleaned,res.width,res.height);
+  if(res.r865px>0) drawLiveOverlay(cLin,res.fcx,res.fcy,res.r865px,res.width);
+  if(res.r865px>0) drawLiveOverlay(cLog,res.fcx,res.fcy,res.r865px,res.width);
+  if(res.dlUm!==null&&res.umPerPx!==null&&res.umPerPx>0){
+    const rdlPx=res.dlUm/res.umPerPx;
+    drawDLCircle(cLin,res.fcx,res.fcy,rdlPx,res.dlUm,res.strehl,res.width);
+    drawDLCircle(cLog,res.fcx,res.fcy,rdlPx,res.dlUm,res.strehl,res.width);
+  }
+  const displayName=name.replace(/\.[^.]+$/,'');
+  document.getElementById('liveTitleLinear').textContent=displayName+' — linear';
+  document.getElementById('liveTitleLog').textContent=displayName+' — log (hot)';
+}
+
+function drawLiveOverlay(canvas,centX,centY,r865px,width){
+  const ctx=canvas.getContext('2d');
+  const lw=Math.max(1,width/600);
+  ctx.beginPath();ctx.arc(centX,centY,r865px,0,2*Math.PI);
+  ctx.strokeStyle='#00d4a0';ctx.lineWidth=lw*1.5;ctx.stroke();
+  ctx.beginPath();ctx.arc(centX,centY,Math.max(2,width/400),0,2*Math.PI);
+  ctx.fillStyle='#4a9eff';ctx.fill();
+  const fs=Math.max(11,Math.round(width/120));
+  ctx.fillStyle='#00d4a0';ctx.font=`${fs}px IBM Plex Mono,monospace`;ctx.textAlign='center';
+  ctx.fillText('R₈₆.₅',centX,Math.max(fs,centY-r865px-fs*0.5));
+  ctx.textAlign='left';
+}
+
+function toggleLiveImageVisibility(){
+  const row=document.getElementById('liveImageRow');
+  const btn=document.getElementById('toggleLiveImageBtn');
+  const isHidden=row.style.display==='none';
+  row.style.display=isHidden?'flex':'none';
+  btn.textContent=isHidden?'Hide Analysis':'Show Analysis';
 }
 
 function analyzeTiffMetrics(arrayBuffer){
@@ -2055,7 +2161,7 @@ function drawLiveMetrics(){
   const ctx=canvas.getContext('2d'),width=canvas.width,height=canvas.height;
   ctx.clearRect(0,0,width,height);
   ctx.fillStyle='#1e2230';ctx.fillRect(0,0,width,height);
-  const pad={left:48,right:48,top:18,bottom:30};
+  const pad={left:48,right:74,top:18,bottom:30};
   const plotW=width-pad.left-pad.right,plotH=height-pad.top-pad.bottom;
   ctx.font='10px IBM Plex Mono, monospace';ctx.lineWidth=1;
   ctx.strokeStyle='#2a2f3d';ctx.fillStyle='#8892a4';
@@ -2063,14 +2169,29 @@ function drawLiveMetrics(){
     const y=pad.top+plotH*i/4;
     ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(width-pad.right,y);ctx.stroke();
   }
-  ctx.save();ctx.translate(width-8,pad.top+plotH/2);ctx.rotate(-Math.PI/2);ctx.fillStyle='#00d4a0';ctx.fillText('r86.5 (px)',0,0);ctx.restore();
-  ctx.save();ctx.translate(width-5,pad.top+plotH/2);ctx.rotate(Math.PI/2);ctx.fillStyle='#ff9500';ctx.fillText('Strehl',0,0);ctx.restore();
+  ctx.save();ctx.translate(width-24,pad.top+plotH/2);ctx.rotate(-Math.PI/2);ctx.fillStyle='#00d4a0';ctx.fillText('r86.5 (px)',0,0);ctx.restore();
+  ctx.save();ctx.translate(width-10,pad.top+plotH/2);ctx.rotate(Math.PI/2);ctx.fillStyle='#ff9500';ctx.fillText('Strehl',0,0);ctx.restore();
   if(liveSamples.length===0){ctx.fillStyle='#8892a4';ctx.fillText('Waiting for new TIFF files…',pad.left+12,pad.top+plotH/2);return;}
   const maxR=Math.max(1,...liveSamples.map(s=>s.r865||0));
   const sv=liveSamples.filter(s=>s.strehl!==null&&s.strehl!==undefined).map(s=>s.strehl);
   const maxS=Math.max(1,...sv);
   const maxT=Math.max(1,liveSamples[liveSamples.length-1].time);
   ctx.fillStyle='#8892a4';ctx.fillText('0 s',pad.left,height-9);ctx.fillText(maxT.toFixed(1)+' s',width-pad.right-28,height-9);
+  // Strehl ratio scale (right axis, orange ticks)
+  ctx.fillStyle='#ff9500';ctx.textAlign='left';
+  for(let i=0;i<=4;i++){
+    const y=pad.top+plotH*i/4;
+    const val=maxS*(1-i/4);
+    ctx.fillText(val.toFixed(2),width-pad.right+4,y+3);
+  }
+  // r865 scale (left axis, blue ticks)
+  ctx.fillStyle='#4a9eff';ctx.textAlign='right';
+  for(let i=0;i<=4;i++){
+    const y=pad.top+plotH*i/4;
+    const val=maxR*(1-i/4);
+    ctx.fillText(val.toFixed(0),pad.left-4,y+3);
+  }
+  ctx.textAlign='left';
   const drawLine=(key,maxValue,color)=>{
     ctx.beginPath();let started=false;
     liveSamples.forEach(sample=>{
